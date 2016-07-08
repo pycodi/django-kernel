@@ -19,7 +19,7 @@ def get_version(*file_paths):
         return version_match.group(1)
     raise RuntimeError('Unable to find version string.')
 
-version = get_version('pyseo', '__init__.py')
+version = get_version('kernel', '__init__.py')
 
 if sys.argv[-1] == 'publish':
     try:
@@ -38,18 +38,18 @@ if sys.argv[-1] == 'tag':
     sys.exit()
 
 readme = open('README.rst').read()
-history = open('HISTORY.rst').read().replace('.. :changelog:', '')
+
 
 setup(
     name='django-kernel',
     version=version,
     description="""Kenrel Model for Django""",
-    long_description=readme + '\n\n' + history,
+    long_description=readme + '\n\n',
     author='Nikita Kryuchkov',
     author_email='info@pycode.net',
     url='https://github.com/pycodi/django-kernel',
     packages=[
-        'pyseo',
+        'kernel',
     ],
     include_package_data=True,
     install_requires=[
