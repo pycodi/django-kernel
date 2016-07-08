@@ -141,9 +141,9 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions):
 
 @python_2_unicode_compatible
 class KernelModel(models.Model):
-    external_id = models.CharField(_('Внешний код'), max_length=120, editable=False, default=uuid.uuid4)
-    created_date = models.DateTimeField(_('Дата создания'), auto_now=True)
-    modified_date = models.DateTimeField(_('Дата изменения'), auto_now_add=True)
+    external_id = models.CharField(_('External Code'), max_length=120, editable=False, default=uuid.uuid4)
+    created_date = models.DateTimeField(auto_now=True)
+    modified_date = models.DateTimeField(auto_now_add=True)
 
     REST = False
     ADMIN = False
