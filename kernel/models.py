@@ -203,6 +203,15 @@ class KernelModel(models.Model):
             model = cls
         return ClassView
 
+    @classmethod
+    def get_list_view_class(cls):
+        from django.views.generic import ListView
+
+        class ClassView(ListView):
+            model = cls
+
+        return ClassView
+
 
 @python_2_unicode_compatible
 class KernelByModel(KernelModel):
