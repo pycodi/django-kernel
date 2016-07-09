@@ -32,6 +32,7 @@ class BaseAdmin(admin.ModelAdmin):
         obj.save()
 
 
+
 class KernelUserAdmin(BaseAdmin, UserAdmin):
     """
     Базовый класс для User моделей

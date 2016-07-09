@@ -142,8 +142,8 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions):
 @python_2_unicode_compatible
 class KernelModel(models.Model):
     external_id = models.CharField(_('External Code'), max_length=120, editable=False, default=uuid.uuid4)
-    created_date = models.DateTimeField(auto_now=True)
-    modified_date = models.DateTimeField(auto_now_add=True)
+    created_date = models.DateTimeField(auto_now_add=True)
+    modified_date = models.DateTimeField(auto_now=True)
 
     REST = False
     ADMIN = False
@@ -194,6 +194,14 @@ class KernelModel(models.Model):
     @classmethod
     def get_rest_viewset(cls):
         return False
+
+    @classmethod
+    def get_detail_view_class(cls):
+        from django.views.generic import DetailView
+
+        class ClassView(DetailView):
+            model = cls
+        return ClassView
 
 
 @python_2_unicode_compatible

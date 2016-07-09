@@ -25,6 +25,7 @@ setup(
     ],
     include_package_data=True,
     install_requires=[
+        'Django>=1.9'
     ],
     license="MIT",
     zip_safe=False,
