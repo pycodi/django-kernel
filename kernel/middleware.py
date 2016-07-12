@@ -46,3 +46,8 @@ class CrequestMiddleware(object):
         Delete request
         """
         cls._request.pop(threading.current_thread(), None)
+
+
+
+
+

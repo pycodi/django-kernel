@@ -10,7 +10,7 @@ except ImportError:
     from distutils.core import setup
 
 
-readme = open('README.rst').read()
+readme = open('README.md').read()
 
 setup(
     name='django-kernel',

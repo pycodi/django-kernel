@@ -304,7 +304,7 @@ class KernelPage(KernelByModel):
 
     @property
     def get_introtext(self):
-        return truncatechars_html(self.content, 220)
+        return truncatechars_html(self.introtext, 220)
 
 
 
