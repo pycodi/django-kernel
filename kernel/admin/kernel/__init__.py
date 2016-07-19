@@ -5,6 +5,8 @@ from django.core.urlresolvers import reverse
 
 from django.utils.translation import ugettext_lazy as _
 
+from kernel import forms as kforms
+
 
 class BaseAdmin(admin.ModelAdmin):
 
@@ -39,12 +41,9 @@ class KernelUserAdmin(BaseAdmin, UserAdmin):
     """
     ordering = ('-id',)
     list_display = ('email', 'first_name', 'last_name', 'is_staff')
-    fieldsets = (
-        (None, {'fields': ('username', 'password')}),
-        (_('Personal info22'), {'fields': ('first_name', 'last_name', 'email', 'photo')}),
-        (_('Permissions'), {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
-        (_('Important dates'), {'fields': ('last_login', 'date_joined')}),
-    )
+    add_form = kforms.KernelUserCreationForm
+    form = kforms.KernelUserChangeForm
+    change_password_form = kforms.AdminPasswordChangeForm
 
 
 class KernelAdmin(BaseAdmin):

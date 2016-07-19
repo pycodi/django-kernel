@@ -18,6 +18,8 @@ from .constant import Lang
 from kernel.managers.user import PortalEmailUserMixinManager
 from kernel.middleware import CrequestMiddleware
 from kernel.utils import upload_dir, slugify
+from kernel import managers as kman
+from kernel import filters as kf
 
 from rest_framework import serializers
 
@@ -36,7 +38,95 @@ class KernelPermissions(PermissionsMixin):
 
 
 @python_2_unicode_compatible
-class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions):
+class KernelModel(models.Model):
+    external_id = models.CharField(_('External Code'), max_length=120, editable=False, default=uuid.uuid4)
+    created_date = models.DateTimeField(auto_now_add=True)
+    modified_date = models.DateTimeField(auto_now=True)
+
+    REST = False
+    ADMIN = False
+    ROUTE_NAME = 'kernel'
+
+    class Meta:
+        abstract = True
+
+    @classmethod
+    def get_admin_class(cls):
+        from kernel.admin.kernel import BaseAdmin
+
+        class Admin(BaseAdmin):
+            pass
+        return Admin
+
+    @classmethod
+    def router_api(cls):
+        return r'{1}/{0}'.format(str(cls.__name__).lower(), cls.ROUTE_NAME)
+
+    @classmethod
+    def base_name(cls):
+        return 'api-{1}-{0}'.format(str(cls.__name__).lower(), cls.ROUTE_NAME)
+
+    @classmethod
+    def serializer_data(cls):
+        return [f.name for f in cls._meta.get_fields()]
+
+    @classmethod
+    def get_serializer_class(cls):
+        class Serializer(serializers.ModelSerializer):
+            class Meta:
+                model = cls
+                fields = cls.serializer_data()
+        return Serializer
+
+    @classmethod
+    def get_list_serializer_class(cls):
+        return False
+
+    @classmethod
+    def get_filter_class(cls):
+        class FilterClass(django_filters.FilterSet):
+            class Meta:
+                model = cls
+                fields = cls.serializer_data()
+        return FilterClass
+
+    @classmethod
+    def get_rest_viewset(cls):
+        from kernel.rest import viewsets as rv
+        from rest_framework.decorators import detail_route, list_route
+        from rest_framework.response import Response
+
+        class ViewSet(rv.KernelViewSets):
+            queryset = cls.objects.all()
+            serializer_class = cls.get_serializer_class()
+            filter_class = cls.get_filter_class()
+            list_serializer_class = cls.get_serializer_class()
+
+            def get_queryset(self):
+                queryset = super(ViewSet, self).get_queryset()
+                return queryset.filter(id__gt=1)
+
+        return ViewSet
+
+    @classmethod
+    def get_detail_view_class(cls):
+        from django.views.generic import DetailView
+
+        class ClassView(DetailView):
+            model = cls
+        return ClassView
+
+    @classmethod
+    def get_list_view_class(cls):
+        from django.views.generic import ListView
+
+        class ClassView(ListView):
+            model = cls
+        return ClassView
+
+
+@python_2_unicode_compatible
+class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelModel):
     """
     Класс для пользователей всей системы. PortalEmailUser не имеет поля имя пользователя,
     в отличие от стандартного класса Django.
@@ -48,7 +138,6 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions):
         * last_login
         * is_superuser
     """
-    external_id = models.CharField(max_length=120, editable=False)
     email = models.EmailField(_('email'), max_length=255, unique=True, db_index=True)
     last_name = models.CharField(_('Фамилия'), max_length=30, blank=True)
     first_name = models.CharField(_('Имя'), max_length=30, blank=True)
@@ -56,11 +145,16 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions):
 
     phone = models.CharField(_('Телефон'), max_length=30, blank=True)
     date_birth = models.DateField(null=True, blank=True)
-    photo = models.ImageField(_('Фотография'), null=True, blank=True)
 
     is_staff = models.BooleanField(_('staff status'), default=False, help_text=Lang.MU_AH2)
     is_active = models.BooleanField(_('active'), default=True, help_text=Lang.MU_AH3)
     date_joined = models.DateTimeField(_('date joined'), default=timezone.now)
+
+    photo = StdImageField(upload_to=upload_dir, blank=True,
+                          variations={'promotion': (775, 775, True),
+                                      'large': (600, 600),
+                                      'thumbnail': (75, 75, True),
+                                      'medium': (300, 300)})
 
     objects = PortalEmailUserMixinManager()
 
@@ -69,6 +163,7 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions):
 
     REST = True
     ADMIN = True
+    ROUTE_NAME = 'users'
 
     class Meta:
         db_table = 'krn_user'
@@ -78,7 +173,10 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions):
 
     @property
     def name(self):
-        return str(' '.join([self.last_name, self.first_name, self.middle_name])).strip()
+        if self.first_name:
+            return str(' '.join([self.last_name, self.first_name, self.middle_name])).strip()
+        else:
+            return self.email
 
     def get_full_name(self):
         """
@@ -121,73 +219,18 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions):
         return 'id', 'email', 'external_id', 'last_name', 'first_name', 'middle_name', 'phone', 'date_birth', 'photo',
 
     @classmethod
-    def router_api(cls):
-        return r'users/{0}'.format(str(cls.__name__).lower())
-
-    @classmethod
-    def base_name(cls):
-        return 'api-users-{0}'.format(str(cls.__name__).lower())
-
-    @staticmethod
-    def get_serializer_class():
-        return False
-
-    @classmethod
-    def get_filter_class(cls):
-        class FilterClass(django_filters.FilterSet):
-            class Meta:
-                model = cls
-                fields = cls.serializer_data()
-        return FilterClass
-
-    @classmethod
-    def get_rest_viewset(cls):
-        return False
-
-
-@python_2_unicode_compatible
-class KernelModel(models.Model):
-    external_id = models.CharField(_('External Code'), max_length=120, editable=False, default=uuid.uuid4)
-    created_date = models.DateTimeField(auto_now_add=True)
-    modified_date = models.DateTimeField(auto_now=True)
-
-    REST = False
-    ADMIN = False
-
-    class Meta:
-        abstract = True
-
-    @classmethod
-    def get_admin_class(cls):
-        from kernel.admin.kernel import BaseAdmin
-
-        class Admin(BaseAdmin):
-            pass
-        return Admin
-
-    @classmethod
-    def router_api(cls):
-        return r'kernel/{0}'.format(str(cls.__name__).lower())
-
-    @classmethod
-    def base_name(cls):
-        return 'api-kernel-{0}'.format(str(cls.__name__).lower())
-
-    @classmethod
-    def serializer_data(cls):
-        return [f.name for f in cls._meta.get_fields()]
-
-    @classmethod
     def get_serializer_class(cls):
-        class Serializer(serializers.ModelSerializer):
+        from kernel.fields import StdImageFieldSerializer
+
+        class KernelUserSerializer(serializers.ModelSerializer):
+            get_name = serializers.CharField(source='name')
+            photo = StdImageFieldSerializer()
+
             class Meta:
                 model = cls
-                fields = cls.serializer_data()
-        return Serializer
+                fields = cls.serializer_data() + ('get_name',)
 
-    @classmethod
-    def get_list_serializer_class(cls):
-        return False
+        return KernelUserSerializer
 
     @classmethod
     def get_filter_class(cls):
@@ -196,27 +239,6 @@ class KernelModel(models.Model):
                 model = cls
                 fields = cls.serializer_data()
         return FilterClass
-
-    @classmethod
-    def get_rest_viewset(cls):
-        return False
-
-    @classmethod
-    def get_detail_view_class(cls):
-        from django.views.generic import DetailView
-
-        class ClassView(DetailView):
-            model = cls
-        return ClassView
-
-    @classmethod
-    def get_list_view_class(cls):
-        from django.views.generic import ListView
-
-        class ClassView(ListView):
-            model = cls
-
-        return ClassView
 
 
 @python_2_unicode_compatible
@@ -230,13 +252,12 @@ class KernelByModel(KernelModel):
         abstract = True
 
     def save(self, *args, **kwargs):
-        request = CrequestMiddleware.get_request()
-        if hasattr(request, '_cached_user'):
-            user = KernelUser.objects.get(email=CrequestMiddleware.get_request()._cached_user)
-            if not self.created_by:
-                self.created_by = user
-            if not self.modified_by:
-                self.modified_by = user
+        if not self.created_by:
+            user = KernelUser.objects.get(email=CrequestMiddleware.get_user())
+            self.created_by = user
+        if not self.modified_by:
+            user = KernelUser.objects.get(email=CrequestMiddleware.get_user())
+            self.modified_by = user
         super(KernelByModel, self).save(*args, **kwargs)
 
     @classmethod
@@ -244,9 +265,39 @@ class KernelByModel(KernelModel):
         return 'id', 'external_id', 'created_by'
 
 
-class PublishedManager(models.Manager):
-    def get_query_set(self):
-        return super(PublishedManager, self).get_query_set().filter(status='published')
+@python_2_unicode_compatible
+class KernelUnit(KernelByModel):
+    code = models.CharField(_('Код'), max_length=255, unique=True, default=uuid.uuid4)
+    name = models.CharField(_('Название'), max_length=255)
+
+    REST = True
+    ROUTE_NAME = 'unit'
+
+    class Meta:
+        abstract = True
+        verbose_name = _('Списки')
+        verbose_name_plural = _('Списки')
+
+    def __str__(self):
+        return self.name
+
+    @classmethod
+    def get_filter_class(cls):
+        class FilterClass(django_filters.FilterSet):
+            code_list = kf.ListFilter(name='code')
+
+            class Meta:
+                model = cls
+                fields = cls.serializer_data() + ('code_list',)
+        return FilterClass
+
+    @classmethod
+    def list_display(cls):
+        return 'code', 'name', 'external_id', 'created_by', 'modified_date'
+
+    @classmethod
+    def serializer_data(cls):
+        return 'id', 'code', 'name'
 
 
 @python_2_unicode_compatible
@@ -277,7 +328,7 @@ class KernelPage(KernelByModel):
     views = models.IntegerField(default=0)
 
     objects = models.Manager()
-    published = PublishedManager()
+    published = kman.PublishedManager()
 
     class Meta:
         ordering = ['-created_date']
