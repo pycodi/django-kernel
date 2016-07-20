@@ -124,6 +124,25 @@ class KernelModel(models.Model):
             model = cls
         return ClassView
 
+    @classmethod
+    def get_uri_detail(cls, pk: str = 'slug'):
+        from django.conf.urls import url
+        return url(r'^%s/(?P<%s>[a-zA-Z0-9_A-Яа-я-]{1,300}).html$' % (str(cls.__name__).lower(), pk),
+                   cls.get_detail_view_class().as_view(), name='{0}_view'.format(str(cls.__name__).lower()))
+
+    @classmethod
+    def get_uri_list(cls):
+        from django.conf.urls import url
+        class_name = str(cls.__name__)
+        return url(r'^%s/$' % class_name.lower(), cls.get_detail_view_class().as_view(), name='{0}_list'.format(class_name.lower()))
+
+    @models.permalink
+    def get_absolute_url(self, pk: str = 'slug'):
+        class_name = str(self._meta.model.__name__)
+        class_app = str(self._meta.app_label)
+        attr = getattr(self, pk)
+        return '{0}:{1}_view'.format(class_app, class_name.lower()), [str("%s" % attr)]
+
 
 @python_2_unicode_compatible
 class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelModel):
@@ -355,7 +374,7 @@ class KernelPage(KernelByModel):
 
     @property
     def get_introtext(self):
-        return truncatechars_html(self.introtext, 220)
+        return truncatechars_html(self.introtext, 80)
 
 
 
