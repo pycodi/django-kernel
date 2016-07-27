@@ -46,6 +46,7 @@ class KernelModel(models.Model):
     REST = False
     ADMIN = False
     ROUTE_NAME = 'kernel'
+    URI = 'id'
 
     class Meta:
         abstract = True
@@ -134,7 +135,7 @@ class KernelModel(models.Model):
     def get_uri_list(cls):
         from django.conf.urls import url
         class_name = str(cls.__name__)
-        return url(r'^%s/$' % class_name.lower(), cls.get_detail_view_class().as_view(), name='{0}_list'.format(class_name.lower()))
+        return url(r'^%s/$' % class_name.lower(), cls.get_list_view_class().as_view(), name='{0}_list'.format(class_name.lower()))
 
     @models.permalink
     def get_absolute_url(self, pk: str = 'slug'):
@@ -214,6 +215,12 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
         Send an email to this User.
         """
         send_mail(subject, message, from_email, [self.email], **kwargs)
+
+    def send_email(self, template, context = {}, **kwargs):
+        from templated_email import send_templated_mail
+        from django.conf import settings
+        send_templated_mail(template_name=template, from_email=settings.DEFAULT_FROM_EMAIL,
+                                recipient_list=[self.email], context=context, **kwargs)
 
     @classmethod
     def get_admin_class(cls):
