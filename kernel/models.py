@@ -1,4 +1,6 @@
 from django.contrib.auth.models import (AbstractBaseUser, PermissionsMixin)
+from django.core.urlresolvers import reverse_lazy
+from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.core.mail import send_mail
 from django.core.cache import cache
 from django.utils.html import strip_tags
@@ -8,6 +10,8 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import python_2_unicode_compatible
 from django.template.defaultfilters import truncatechars_html
+from django.conf.urls import url
+
 
 from polymorphic.models import PolymorphicModel
 from stdimage.models import StdImageField
@@ -46,7 +50,7 @@ class KernelModel(models.Model):
     REST = False
     ADMIN = False
     ROUTE_NAME = 'kernel'
-    URI = 'id'
+    URI = 'pk'
 
     class Meta:
         abstract = True
@@ -70,6 +74,10 @@ class KernelModel(models.Model):
     @classmethod
     def serializer_data(cls):
         return [f.name for f in cls._meta.get_fields()]
+
+    @classmethod
+    def list_fields(cls):
+        return None
 
     @classmethod
     def get_serializer_class(cls):
@@ -110,6 +118,36 @@ class KernelModel(models.Model):
         return ViewSet
 
     @classmethod
+    def get_create_view_class(cls, fields_list):
+        class_name = str(cls.__name__).lower()
+
+        class Create(CreateView):
+            model = cls
+            success_url = reverse_lazy('%s_list' % class_name)
+            fields = fields_list
+        return Create
+
+    @classmethod
+    def get_update_view_class(cls, fields_list):
+        class_name = str(cls.__name__).lower()
+
+        class Update(UpdateView):
+            model = cls
+            success_url = reverse_lazy('%s_list' % class_name)
+            fields = fields_list
+        return Update
+
+    @classmethod
+    def get_delete_view_class(cls, fields_list):
+        class_name = str(cls.__name__).lower()
+
+        class Delete(DeleteView):
+            model = cls
+            success_url = reverse_lazy('%s_list' % class_name)
+            fields = fields_list
+        return Delete
+
+    @classmethod
     def get_detail_view_class(cls):
         from django.views.generic import DetailView
 
@@ -120,22 +158,47 @@ class KernelModel(models.Model):
     @classmethod
     def get_list_view_class(cls):
         from django.views.generic import ListView
+#        from django_tables2 import SingleTableView
 
         class ClassView(ListView):
             model = cls
         return ClassView
 
     @classmethod
-    def get_uri_detail(cls, pk: str = 'slug'):
+    def get_uri_create(cls):
         from django.conf.urls import url
+        class_name = str(cls.__name__).lower()
+        fields = cls.list_fields()
+        return url(r'^%s/new.html$' % class_name,
+                   cls.get_create_view_class(fields).as_view(), name='{0}_create'.format(class_name))
+
+    @classmethod
+    def get_uri_update(cls):
+        class_name = str(cls.__name__).lower()
+        fields = cls.list_fields()
+        return url(r'^%s/(?P<pk>\d+)/edit/$' % class_name,
+                   cls.get_update_view_class(fields).as_view(), name='{0}_update'.format(class_name))
+
+    @classmethod
+    def get_uri_delete(cls):
+        class_name = str(cls.__name__).lower()
+        fields = cls.list_fields()
+        return url(r'^%s/(?P<pk>\d+)/delete/' % class_name,
+                   cls.get_delete_view_class(fields).as_view(), name='{0}_delete'.format(class_name))
+
+    @classmethod
+    def get_uri_detail(cls, pk: str = URI):
         return url(r'^%s/(?P<%s>[a-zA-Z0-9_A-Яа-я-]{1,300}).html$' % (str(cls.__name__).lower(), pk),
                    cls.get_detail_view_class().as_view(), name='{0}_view'.format(str(cls.__name__).lower()))
 
     @classmethod
     def get_uri_list(cls):
-        from django.conf.urls import url
         class_name = str(cls.__name__)
         return url(r'^%s/$' % class_name.lower(), cls.get_list_view_class().as_view(), name='{0}_list'.format(class_name.lower()))
+
+    @classmethod
+    def get_uri_crud(cls):
+       return cls.get_uri_create(), cls.get_uri_update(), cls.get_uri_detail(), cls.get_uri_list(), cls.get_uri_delete()
 
     @models.permalink
     def get_absolute_url(self, pk: str = 'slug'):
@@ -143,6 +206,8 @@ class KernelModel(models.Model):
         class_app = str(self._meta.app_label)
         attr = getattr(self, pk)
         return '{0}:{1}_view'.format(class_app, class_name.lower()), [str("%s" % attr)]
+
+
 
 
 @python_2_unicode_compatible
