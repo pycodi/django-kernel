@@ -49,6 +49,7 @@ class KernelModel(models.Model):
 
     REST = False
     ADMIN = False
+    ALIAS = False
     ROUTE_NAME = 'kernel'
     URI = 'pk'
 
@@ -165,26 +166,31 @@ class KernelModel(models.Model):
         return ClassView
 
     @classmethod
+    def get_alias(cls):
+        if cls.ALIAS:
+            return cls.ALIAS
+        return str(cls.__name__).lower()
+
+    @classmethod
     def get_uri_create(cls):
         from django.conf.urls import url
-        class_name = str(cls.__name__).lower()
         fields = cls.list_fields()
-        return url(r'^%s/new.html$' % class_name,
-                   cls.get_create_view_class(fields).as_view(), name='{0}_create'.format(class_name))
+        return url(r'^%s/new.html$' % cls.get_alias(),
+                   cls.get_create_view_class(fields).as_view(), name='{0}_create'.format(cls.get_alias()))
 
     @classmethod
     def get_uri_update(cls):
         class_name = str(cls.__name__).lower()
         fields = cls.list_fields()
-        return url(r'^%s/(?P<pk>\d+)/edit/$' % class_name,
-                   cls.get_update_view_class(fields).as_view(), name='{0}_update'.format(class_name))
+        return url(r'^%s/(?P<pk>\d+)/edit/$' %  cls.get_alias(),
+                   cls.get_update_view_class(fields).as_view(), name='{0}_update'.format( cls.get_alias()))
 
     @classmethod
     def get_uri_delete(cls):
         class_name = str(cls.__name__).lower()
         fields = cls.list_fields()
-        return url(r'^%s/(?P<pk>\d+)/delete/' % class_name,
-                   cls.get_delete_view_class(fields).as_view(), name='{0}_delete'.format(class_name))
+        return url(r'^%s/(?P<pk>\d+)/delete/' %  cls.get_alias(),
+                   cls.get_delete_view_class(fields).as_view(), name='{0}_delete'.format( cls.get_alias()))
 
     @classmethod
     def get_uri_detail(cls, pk: str = URI):
@@ -194,7 +200,7 @@ class KernelModel(models.Model):
     @classmethod
     def get_uri_list(cls):
         class_name = str(cls.__name__)
-        return url(r'^%s/$' % class_name.lower(), cls.get_list_view_class().as_view(), name='{0}_list'.format(class_name.lower()))
+        return url(r'^%s/$' %  cls.get_alias().lower(), cls.get_list_view_class().as_view(), name='{0}_list'.format( cls.get_alias().lower()))
 
     @classmethod
     def get_uri_crud(cls):
@@ -205,7 +211,7 @@ class KernelModel(models.Model):
         class_name = str(self._meta.model.__name__)
         class_app = str(self._meta.app_label)
         attr = getattr(self, pk)
-        return '{0}:{1}_view'.format(class_app, class_name.lower()), [str("%s" % attr)]
+        return '{0}:{1}_view'.format(class_app,  self.get_alias()), [str("%s" % attr)]
 
 
 
