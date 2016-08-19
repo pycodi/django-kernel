@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.http.response import HttpResponse
 from django.contrib import auth
 from django.views.generic import CreateView, TemplateView, FormView, RedirectView
 from django.contrib.auth.forms import (AuthenticationForm, SetPasswordForm,

@@ -51,6 +51,7 @@ class KernelModel(models.Model):
     ADMIN = False
     ALIAS = False
     ROUTE_NAME = 'kernel'
+    EXPORT = False
     URI = 'pk'
 
     class Meta:
@@ -65,6 +66,18 @@ class KernelModel(models.Model):
         return Admin
 
     @classmethod
+    def get_export_class(cls):
+        from import_export import resources
+        from import_export import fields
+
+        class Resource(resources.ModelResource):
+            class Meta:
+                model = cls
+                fields = cls.export_data()
+        return Resource
+
+
+    @classmethod
     def router_api(cls):
         return r'{1}/{0}'.format(str(cls.__name__).lower(), cls.ROUTE_NAME)
 
@@ -75,6 +88,10 @@ class KernelModel(models.Model):
     @classmethod
     def serializer_data(cls):
         return [f.name for f in cls._meta.get_fields()]
+
+    @classmethod
+    def export_data(cls):
+        return cls.serializer_data()
 
     @classmethod
     def list_fields(cls):
@@ -166,6 +183,37 @@ class KernelModel(models.Model):
         return ClassView
 
     @classmethod
+    def get_detail_export_view_class(cls):
+        from django.views.generic import DetailView
+
+        class ClassView(DetailView):
+            model = cls
+        return ClassView
+
+    @classmethod
+    def get_export_view_class(cls):
+        from django.views.generic import TemplateView, ListView
+        from django.http.response import HttpResponse
+        import csv
+
+        class ClassView(ListView):
+            model = cls
+
+            def get(self, request, *args, **kwargs):
+                export_type = self.request.GET.get('export', 'csv')
+                export = self.model.get_export_class()().export()
+                if 'csv' in export_type:
+                    response = HttpResponse(content_type='text/csv')
+                elif 'xlsx' in export_type:
+                    response = HttpResponse(content_type='application/vnd.ms-excel')
+                else:
+                    response = HttpResponse(content_type='text/csv')
+                response['Content-Disposition'] = 'attachment; filename="%s.%s"' % (slugify(cls.get_alias()) , export_type)
+                response.write(export.__getattribute__(export_type))
+                return response
+        return ClassView
+
+    @classmethod
     def get_alias(cls):
         if cls.ALIAS:
             return cls.ALIAS
@@ -180,16 +228,14 @@ class KernelModel(models.Model):
 
     @classmethod
     def get_uri_update(cls):
-        class_name = str(cls.__name__).lower()
         fields = cls.list_fields()
         return url(r'^%s/(?P<pk>\d+)/edit/$' %  cls.get_alias(),
                    cls.get_update_view_class(fields).as_view(), name='{0}_update'.format( cls.get_alias()))
 
     @classmethod
     def get_uri_delete(cls):
-        class_name = str(cls.__name__).lower()
         fields = cls.list_fields()
-        return url(r'^%s/(?P<pk>\d+)/delete/' %  cls.get_alias(),
+        return url(r'^%s/(?P<pk>\d+)/delete/' % cls.get_alias(),
                    cls.get_delete_view_class(fields).as_view(), name='{0}_delete'.format( cls.get_alias()))
 
     @classmethod
@@ -199,21 +245,29 @@ class KernelModel(models.Model):
 
     @classmethod
     def get_uri_list(cls):
-        class_name = str(cls.__name__)
-        return url(r'^%s/$' %  cls.get_alias().lower(), cls.get_list_view_class().as_view(), name='{0}_list'.format( cls.get_alias().lower()))
+        return url(r'^%s/$' % cls.get_alias().lower(),
+                   cls.get_list_view_class().as_view(), name='{0}_list'.format( cls.get_alias().lower()))
+
+    @classmethod
+    def get_uri_export(cls):
+        return url(r'^%s/export/' % cls.get_alias(),
+                   cls.get_export_view_class().as_view(), name='{0}_export'.format(cls.get_alias()))
+
+    @classmethod
+    def get_uri_detail_export(cls):
+        return url(r'^%s/(?P<pk>\d+)/export/' % cls.get_alias(),
+                   cls.get_detail_export_view_class().as_view(), name='{0}_detail_export'.format(cls.get_alias()))
 
     @classmethod
     def get_uri_crud(cls):
-       return cls.get_uri_create(), cls.get_uri_update(), cls.get_uri_detail(), cls.get_uri_list(), cls.get_uri_delete()
+        return cls.get_uri_create(), cls.get_uri_update(), \
+               cls.get_uri_detail(), cls.get_uri_list(), cls.get_uri_delete(), cls.get_uri_export()
 
     @models.permalink
     def get_absolute_url(self, pk: str = 'slug'):
-        class_name = str(self._meta.model.__name__)
         class_app = str(self._meta.app_label)
         attr = getattr(self, pk)
         return '{0}:{1}_view'.format(class_app,  self.get_alias()), [str("%s" % attr)]
-
-
 
 
 @python_2_unicode_compatible
