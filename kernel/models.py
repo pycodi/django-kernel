@@ -76,6 +76,9 @@ class KernelModel(models.Model):
                 fields = cls.export_data()
         return Resource
 
+    @classmethod
+    def get_modelform_class(cls):
+        return None
 
     @classmethod
     def router_api(cls):
@@ -95,7 +98,7 @@ class KernelModel(models.Model):
 
     @classmethod
     def list_fields(cls):
-        return None
+        return '__all__'
 
     @classmethod
     def get_serializer_class(cls):
@@ -142,7 +145,10 @@ class KernelModel(models.Model):
         class Create(CreateView):
             model = cls
             success_url = reverse_lazy('%s_list' % class_name)
-            fields = fields_list
+            if cls.get_modelform_class():
+                form_class = cls.get_modelform_class()
+            else:
+                fields = fields_list
         return Create
 
     @classmethod
@@ -152,7 +158,10 @@ class KernelModel(models.Model):
         class Update(UpdateView):
             model = cls
             success_url = reverse_lazy('%s_list' % class_name)
-            fields = fields_list
+            if cls.get_modelform_class():
+                form_class = cls.get_modelform_class()
+            else:
+                fields = fields_list
         return Update
 
     @classmethod
@@ -263,11 +272,13 @@ class KernelModel(models.Model):
         return cls.get_uri_create(), cls.get_uri_update(), \
                cls.get_uri_detail(), cls.get_uri_list(), cls.get_uri_delete(), cls.get_uri_export()
 
+    def get_namespace(self):
+        return self._meta.app_label
+
     @models.permalink
-    def get_absolute_url(self, pk: str = 'slug'):
-        class_app = str(self._meta.app_label)
+    def get_absolute_url(self, pk: str = URI):
         attr = getattr(self, pk)
-        return '{0}:{1}_view'.format(class_app,  self.get_alias()), [str("%s" % attr)]
+        return '{0}:{1}_view'.format(self.get_namespace(),  self.get_alias()), [str("%s" % attr)]
 
 
 @python_2_unicode_compatible
@@ -404,11 +415,17 @@ class KernelByModel(KernelModel):
 
     def save(self, *args, **kwargs):
         if not self.created_by:
-            user = KernelUser.objects.get(email=CrequestMiddleware.get_user())
-            self.created_by = user
+            try:
+                user = KernelUser.objects.get(email=CrequestMiddleware.get_user())
+                self.created_by = user
+            except:
+                    pass
         if not self.modified_by:
-            user = KernelUser.objects.get(email=CrequestMiddleware.get_user())
-            self.modified_by = user
+            try:
+                user = KernelUser.objects.get(email=CrequestMiddleware.get_user())
+                self.modified_by = user
+            except:
+                pass
         super(KernelByModel, self).save(*args, **kwargs)
 
     @classmethod
