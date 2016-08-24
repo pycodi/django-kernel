@@ -144,7 +144,7 @@ class KernelModel(models.Model):
 
         class Create(CreateView):
             model = cls
-            success_url = reverse_lazy('%s_list' % class_name)
+            success_url = reverse_lazy('%s:%s_list' % (cls.get_namespace(), class_name))
             if cls.get_modelform_class():
                 form_class = cls.get_modelform_class()
             else:
@@ -153,15 +153,31 @@ class KernelModel(models.Model):
 
     @classmethod
     def get_update_view_class(cls, fields_list):
+        from braces.views import FormValidMessageMixin
+
         class_name = str(cls.__name__).lower()
 
         class Update(UpdateView):
             model = cls
-            success_url = reverse_lazy('%s_list' % class_name)
+            success_url = reverse_lazy('%s:%s_list' % (cls.get_namespace(), class_name))
             if cls.get_modelform_class():
                 form_class = cls.get_modelform_class()
             else:
                 fields = fields_list
+
+            def post(self, request, *args, **kwargs):
+                """
+                Handles POST requests, instantiating a form instance with the passed
+                POST variables and then checked for validity.
+                """
+                self.object = self.get_object()
+                form = self.get_form()
+                print(form.is_valid())
+                if form.is_valid():
+                    return self.form_valid(form)
+                else:
+                    return self.form_invalid(form)
+
         return Update
 
     @classmethod
@@ -272,13 +288,19 @@ class KernelModel(models.Model):
         return cls.get_uri_create(), cls.get_uri_update(), \
                cls.get_uri_detail(), cls.get_uri_list(), cls.get_uri_delete(), cls.get_uri_export()
 
-    def get_namespace(self):
-        return self._meta.app_label
+    @classmethod
+    def get_namespace(cls):
+        return cls._meta.app_label
 
     @models.permalink
     def get_absolute_url(self, pk: str = URI):
         attr = getattr(self, pk)
         return '{0}:{1}_view'.format(self.get_namespace(),  self.get_alias()), [str("%s" % attr)]
+
+    @models.permalink
+    def get_absolute_delete_url(self, pk: str = URI):
+        attr = getattr(self, pk)
+        return '{0}:{1}_delete'.format(self.get_namespace(),  self.get_alias()), [str("%s" % attr)]
 
 
 @python_2_unicode_compatible
@@ -453,10 +475,11 @@ class KernelUnit(KernelByModel):
     def get_filter_class(cls):
         class FilterClass(django_filters.FilterSet):
             code_list = kf.ListFilter(name='code')
+            id_list = kf.ListFilter(name='id')
 
             class Meta:
                 model = cls
-                fields = cls.serializer_data() + ('code_list',)
+                fields = cls.serializer_data() + ('code_list','id_list')
         return FilterClass
 
     @classmethod
