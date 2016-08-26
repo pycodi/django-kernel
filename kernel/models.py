@@ -58,6 +58,11 @@ class KernelModel(models.Model):
         abstract = True
 
     @classmethod
+    def methods(cls):
+        from types import FunctionType
+        return [x for x in dir(cls)]
+
+    @classmethod
     def get_admin_class(cls):
         from kernel.admin.kernel import BaseAdmin
 
@@ -285,8 +290,21 @@ class KernelModel(models.Model):
 
     @classmethod
     def get_uri_crud(cls):
-        return cls.get_uri_create(), cls.get_uri_update(), \
-               cls.get_uri_detail(), cls.get_uri_list(), cls.get_uri_delete(), cls.get_uri_export()
+        import re
+        uri_list = []
+        for m in cls.methods():
+            if re.match('get_uri_', m) and not m == 'get_uri_crud':
+                uri_list.append(getattr(cls, m)())
+        return uri_list
+
+    @classmethod
+    def get_all_uri(cls):
+        import re
+        uri_list = []
+        for m in cls.methods():
+            if re.match('get_uri_', m) and not m == 'get_uri_crud':
+                uri_list.append(getattr(cls, m)())
+        return uri_list
 
     @classmethod
     def get_namespace(cls):
