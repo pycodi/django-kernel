@@ -298,7 +298,7 @@ class KernelModel(models.Model):
         return uri_list
 
     @classmethod
-    def get_all_uri(cls):
+    def urls(cls):
         import re
         uri_list = []
         for m in cls.methods():
@@ -370,9 +370,11 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
     @property
     def name(self):
         if self.first_name:
-            return str(' '.join([self.last_name, self.first_name, self.middle_name])).strip()
+            return '{} {}'.format(str(' '.join([self.last_name, self.first_name, self.middle_name])).strip(), self.email)
         else:
             return self.email
+
+
 
     def get_full_name(self):
         """
