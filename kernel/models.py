@@ -413,7 +413,7 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
     def list_fieldsets():
         return (
            (None, {'fields': ('email', 'password')}),
-           (_('Personal info'), {'fields': ('first_name', 'last_name', 'photo')}),
+           (_('Personal info'), {'fields': ('first_name', 'last_name', 'middle_name','photo')}),
            (_('Permissions'), {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
            (_('Important dates'), {'fields': ('last_login', 'date_joined')}),
         )
