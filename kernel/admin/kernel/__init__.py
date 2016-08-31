@@ -9,6 +9,7 @@ from kernel import forms as kforms
 
 
 class BaseAdmin(admin.ModelAdmin):
+    list_per_page = 100
 
     def get_fieldsets(self, request, obj=None):
         if hasattr(self.model, 'list_fieldsets'):
