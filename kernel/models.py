@@ -485,8 +485,8 @@ class KernelUnit(KernelByModel):
 
     class Meta:
         abstract = True
-        verbose_name = _('Списки')
-        verbose_name_plural = _('Списки')
+        #verbose_name = _('%(class)s')
+        #verbose_name_plural = _('%(class)s')
 
     def __str__(self):
         return self.name
