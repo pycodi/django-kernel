@@ -74,7 +74,8 @@ class PasswordResetView(CsrfProtectMixin, FormView):
         return super(PasswordResetView, self).form_valid(form)
 
 
-
+class PasswordResetDoneView(TemplateView):
+    template_name = 'kernel/password_reset_done.html'
 
 
 class PasswordChangeView(LoginRequiredMixin, WithNextUrlMixin, AuthDecoratorsMixin, FormView):
@@ -110,8 +111,6 @@ class PasswordChangeDoneView(LoginRequiredMixin, TemplateView):
 
 
 
-class PasswordResetDoneView(TemplateView):
-    template_name = 'kernel/password_reset_done.html'
 
 
 class PasswordResetConfirmView(AuthDecoratorsMixin, FormView):
