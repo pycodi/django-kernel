@@ -6,7 +6,6 @@ from django.utils.functional import lazy
 from django.conf import settings
 from django.contrib.auth import get_user_model, REDIRECT_FIELD_NAME
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import (SetPasswordForm, PasswordChangeForm, PasswordResetForm)
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib import auth
 from django.utils.http import base36_to_int, is_safe_url
@@ -18,8 +17,7 @@ from django.views.generic import FormView, TemplateView, RedirectView
 from django.contrib.auth import update_session_auth_hash
 from django.contrib import auth
 from django.views.generic import CreateView, TemplateView, FormView, RedirectView
-from django.contrib.auth.forms import (AuthenticationForm, SetPasswordForm,
-                                       PasswordChangeForm, PasswordResetForm)
+from django.contrib.auth.forms import (AuthenticationForm, SetPasswordForm, PasswordChangeForm, PasswordResetForm)
 from braces.forms import UserKwargModelFormMixin
 
 from .mixin import LoginRequiredMixin, WithNextUrlMixin, AuthDecoratorsMixin, CsrfProtectMixin
@@ -76,41 +74,6 @@ class PasswordResetView(CsrfProtectMixin, FormView):
 
 class PasswordResetDoneView(TemplateView):
     template_name = 'kernel/password_reset_done.html'
-
-
-class PasswordChangeView(LoginRequiredMixin, WithNextUrlMixin, AuthDecoratorsMixin, FormView):
-    template_name = 'registration/password_change_form.html'
-    form_class = PasswordChangeForm
-    success_url = reverse_lazy('password_change_done')
-
-    def get_form_kwargs(self):
-        kwargs = super(PasswordChangeView, self).get_form_kwargs()
-        kwargs['user'] = self.get_user()
-        return kwargs
-
-    def get_user(self):
-        return self.request.user
-
-    def form_valid(self, form):
-        form.save()
-        update_session_auth_hash(self.request, form.user)
-        return super(PasswordChangeView, self).form_valid(form)
-
-
-class PasswordChangeDoneView(LoginRequiredMixin, TemplateView):
-    template_name = 'registration/password_change_done.html'
-
-
-# 4 views for password reset:
-# - PasswordResetView sends the mail
-# - PasswordResetDoneView shows a success message for the above
-# - PasswordResetConfirmView checks the link the user clicked and
-#   prompts for a new password
-# - PasswordResetCompleteView shows a success message for the above
-
-
-
-
 
 
 class PasswordResetConfirmView(AuthDecoratorsMixin, FormView):
@@ -193,3 +156,26 @@ class PasswordResetCompleteView(TemplateView):
         kwargs = super(PasswordResetCompleteView, self).get_context_data(**kwargs)
         kwargs['login_url'] = self.get_login_url()
         return kwargs
+
+
+class PasswordChangeView(LoginRequiredMixin, WithNextUrlMixin, AuthDecoratorsMixin, FormView):
+    template_name = 'registration/password_change_form.html'
+    form_class = PasswordChangeForm
+    success_url = reverse_lazy('password_change_done')
+
+    def get_form_kwargs(self):
+        kwargs = super(PasswordChangeView, self).get_form_kwargs()
+        kwargs['user'] = self.get_user()
+        return kwargs
+
+    def get_user(self):
+        return self.request.user
+
+    def form_valid(self, form):
+        form.save()
+        update_session_auth_hash(self.request, form.user)
+        return super(PasswordChangeView, self).form_valid(form)
+
+
+class PasswordChangeDoneView(LoginRequiredMixin, TemplateView):
+    template_name = 'registration/password_change_done.html'

@@ -52,6 +52,7 @@ class KernelModel(models.Model):
     ALIAS = False
     ROUTE_NAME = 'kernel'
     EXPORT = False
+    MODELFORM = False
     URI = 'pk'
 
     class Meta:
@@ -82,8 +83,34 @@ class KernelModel(models.Model):
         return Resource
 
     @classmethod
-    def get_modelform_class(cls):
+    def get_crispy_fieldset(cls):
         return None
+
+    @classmethod
+    def get_modelform_class(cls):
+         if 'crispy_forms' in settings.INSTALLED_APPS and cls.MODELFORM:
+             from django import forms
+             # django-crispy-forms
+             from crispy_forms.helper import FormHelper
+
+             class Form(forms.ModelForm):
+                 class Meta:
+                     model = cls
+                     fields = cls.list_fields()
+
+                 def __init__(self, *args, **kwargs):
+                     super(Form, self).__init__( *args, **kwargs)
+                     self.helper = FormHelper()
+                     self.helper.form_class = 'form-horizontal'
+                     self.helper.label_class = 'col-lg-2'
+                     self.helper.field_class = 'col-lg-8'
+                     self.helper.is_multipart = True
+                     self.helper.form_tag = False
+                     self.helper.form_action = '#'
+                     if cls.get_crispy_fieldset():
+                         self.helper.layout = cls.get_crispy_fieldset()
+             return Form
+         return None
 
     @classmethod
     def router_api(cls):
@@ -162,8 +189,9 @@ class KernelModel(models.Model):
 
         class_name = str(cls.__name__).lower()
 
-        class Update(UpdateView):
+        class Update(FormValidMessageMixin, UpdateView):
             model = cls
+            form_valid_message = ''
             success_url = reverse_lazy('%s:%s_list' % (cls.get_namespace(), class_name))
             if cls.get_modelform_class():
                 form_class = cls.get_modelform_class()
@@ -177,7 +205,6 @@ class KernelModel(models.Model):
                 """
                 self.object = self.get_object()
                 form = self.get_form()
-                print(form.is_valid())
                 if form.is_valid():
                     return self.form_valid(form)
                 else:
