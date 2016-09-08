@@ -347,6 +347,15 @@ class KernelModel(models.Model):
         attr = getattr(self, pk)
         return '{0}:{1}_delete'.format(self.get_namespace(),  self.get_alias()), [str("%s" % attr)]
 
+    def check_permission_create(self):
+        return True
+
+    def check_permission_update(self):
+        return True
+
+    def check_permission_remove(self):
+        return True
+
 
 @python_2_unicode_compatible
 class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelModel):
@@ -397,11 +406,9 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
     @property
     def name(self):
         if self.first_name:
-            return '{} {}'.format(str(' '.join([self.last_name, self.first_name, self.middle_name])).strip(), self.email)
+            return '{} ({})'.format(str(' '.join([self.last_name, self.first_name, self.middle_name])).strip(), self.email)
         else:
             return self.email
-
-
 
     def get_full_name(self):
         """
