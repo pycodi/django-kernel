@@ -406,7 +406,7 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
     @property
     def name(self):
         if self.first_name:
-            return '{} ({})'.format(str(' '.join([self.last_name, self.first_name, self.middle_name])).strip(), self.email)
+            return '{}'.format(str(' '.join([self.last_name, self.first_name, self.middle_name])).strip())
         else:
             return self.email
 
