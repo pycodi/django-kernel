@@ -1,6 +1,7 @@
 from django.contrib.auth.models import (AbstractBaseUser, PermissionsMixin)
 from django.core.urlresolvers import reverse_lazy
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
+from django.core.exceptions import PermissionDenied
 from django.core.mail import send_mail
 from django.core.cache import cache
 from django.utils.html import strip_tags
@@ -19,11 +20,13 @@ from ckeditor_uploader.fields import RichTextUploadingField
 
 
 from .constant import Lang
+
 from kernel.managers.user import PortalEmailUserMixinManager
 from kernel.middleware import CrequestMiddleware
 from kernel.utils import upload_dir, slugify
 from kernel import managers as kman
 from kernel import filters as kf
+from kernel import action as ka
 
 from rest_framework import serializers
 
@@ -42,7 +45,7 @@ class KernelPermissions(PermissionsMixin):
 
 
 @python_2_unicode_compatible
-class KernelModel(models.Model):
+class KernelModel(ka.ActionKernelModel, models.Model):
     external_id = models.CharField(_('External Code'), max_length=120, editable=False, default=uuid.uuid4)
     created_date = models.DateTimeField(auto_now_add=True)
     modified_date = models.DateTimeField(auto_now=True)
@@ -214,12 +217,17 @@ class KernelModel(models.Model):
 
     @classmethod
     def get_delete_view_class(cls, fields_list):
-        class_name = str(cls.__name__).lower()
 
         class Delete(DeleteView):
             model = cls
-            success_url = reverse_lazy('%s_list' % class_name)
+            success_url = reverse_lazy('{}:{}_list'.format(cls._meta.app_label, str(cls.__name__).lower()))
             fields = fields_list
+
+            def dispatch(self, request, *args, **kwargs):
+                self.object = self.get_object()
+                if not self.object.can_action_delete():
+                    raise PermissionDenied
+                return super(Delete, self).dispatch(request, *args, **kwargs)
         return Delete
 
     @classmethod
@@ -431,8 +439,9 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
     def send_email(self, template, context = {}, **kwargs):
         from templated_email import send_templated_mail
         from django.conf import settings
-        send_templated_mail(template_name=template, from_email=settings.DEFAULT_FROM_EMAIL,
-                                recipient_list=[self.email], context=context, **kwargs)
+        if settings.SEND_EMAIL:
+            send_templated_mail(template_name=template, from_email=settings.DEFAULT_FROM_EMAIL,
+                                    recipient_list=[self.email], context=context, **kwargs)
 
     @classmethod
     def get_admin_class(cls):
