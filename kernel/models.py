@@ -612,6 +612,19 @@ class KernelPage(KernelByModel):
         return truncatechars_html(self.introtext, 80)
 
 
+class KernelList(KernelModel):
+    name = models.CharField(_('Название'), max_length=255)
+
+    REST = True
+    ADMIN = True
+    ROUTE_NAME = 'list'
+
+    class Meta:
+        abstract = True
+
+    def __str__(self):
+        return self.name
+
 
 
 
