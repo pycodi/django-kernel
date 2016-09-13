@@ -1,26 +1,37 @@
 from django.db import models
-
+from django.http import HttpResponseRedirect
+from django.conf import settings
 from kernel import models as km
 from kernel.middleware import CrequestMiddleware
 
 
-class ActionKernelModel(models.Model):
+class ActionKernelModel(object):
 
-    class Meta:
-        abstract = True
-
-    @property
-    def action_user(self):
-        try:
-            user = km.KernelUser.objects.get(email=CrequestMiddleware.get_user())
-        except:
-            user = km.KernelUser.objects.get(id=1)
-        return user
-
-    def generate_perm(self, action):
-        app_label = self._meta.app_label
-        class_name = str(self.__class__.__name__).lower()
+    @classmethod
+    def generate_perm(cls, action):
+        app_label = cls._meta.app_label
+        class_name = str(cls.__class__.__name__).lower()
         return '{}.{}_{}'.format(app_label, action, class_name)
 
-    def can_action_delete(self):
-        return self.action_user.has_perm(self.generate_perm('delete'))
+    @classmethod
+    def can_action_create(cls, request):
+        return request.user.has_perm(cls.generate_perm('add'))
+
+    @classmethod
+    def can_action_update(cls, request):
+        return request.user.has_perm(cls.generate_perm('change'))
+
+    @classmethod
+    def can_action_delete(cls, request):
+        return request.user.has_perm(cls.generate_perm('delete'))
+
+    @classmethod
+    def can_action_view_detail(cls, request):
+        return request.user.has_perm(cls.generate_perm('view'))
+
+    @classmethod
+    def can_action_view_list(cls, request):
+        return request.user.has_perm(cls.generate_perm('view'))
+
+    def can_action_export(cls, request):
+        return request.user.has_perm(cls.generate_perm('view'))

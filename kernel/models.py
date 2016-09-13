@@ -2,6 +2,9 @@ from django.contrib.auth.models import (AbstractBaseUser, PermissionsMixin)
 from django.core.urlresolvers import reverse_lazy
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.core.exceptions import PermissionDenied
+from django.utils.decorators import method_decorator
+from django.shortcuts import redirect
+from django.http import HttpResponseRedirect
 from django.core.mail import send_mail
 from django.core.cache import cache
 from django.utils.html import strip_tags
@@ -184,6 +187,14 @@ class KernelModel(ka.ActionKernelModel, models.Model):
                 form_class = cls.get_modelform_class()
             else:
                 fields = fields_list
+
+            def dispatch(self, request, *args, **kwargs):
+                if not self.model.can_action_create(request):
+                    if not request.user.is_authenticated():
+                        return redirect(settings.LOGIN_URL)
+                    raise PermissionDenied
+                return super(Create, self).dispatch(request, *args, **kwargs)
+
         return Create
 
     @classmethod
@@ -212,6 +223,14 @@ class KernelModel(ka.ActionKernelModel, models.Model):
                 else:
                     return self.form_invalid(form)
 
+            def dispatch(self, request, *args, **kwargs):
+                self.object = self.get_object()
+                if not self.object.can_action_update(request):
+                    if request.user.is_authenticated():
+                        return redirect(settings.LOGIN_URL)
+                    raise PermissionDenied
+                return super(Update, self).dispatch(request, *args, **kwargs)
+
         return Update
 
     @classmethod
@@ -224,27 +243,13 @@ class KernelModel(ka.ActionKernelModel, models.Model):
 
             def dispatch(self, request, *args, **kwargs):
                 self.object = self.get_object()
-                if not self.object.can_action_delete():
+                if not self.object.can_action_delete(request):
+                    if request.user.is_authenticated():
+                        return redirect(settings.LOGIN_URL)
                     raise PermissionDenied
                 return super(Delete, self).dispatch(request, *args, **kwargs)
+
         return Delete
-
-    @classmethod
-    def get_detail_view_class(cls):
-        from django.views.generic import DetailView
-
-        class ClassView(DetailView):
-            model = cls
-        return ClassView
-
-    @classmethod
-    def get_list_view_class(cls):
-        from django.views.generic import ListView
-#        from django_tables2 import SingleTableView
-
-        class ClassView(ListView):
-            model = cls
-        return ClassView
 
     @classmethod
     def get_detail_export_view_class(cls):
@@ -252,6 +257,46 @@ class KernelModel(ka.ActionKernelModel, models.Model):
 
         class ClassView(DetailView):
             model = cls
+
+            def dispatch(self, request, *args, **kwargs):
+                self.object = self.get_object()
+                if not self.object.can_action_view_detail(request):
+                    if request.user.is_authenticated():
+                        return redirect(settings.LOGIN_URL)
+                    raise PermissionDenied
+                return super(ClassView, self).dispatch(request, *args, **kwargs)
+
+        return ClassView
+
+    @classmethod
+    def get_detail_view_class(cls):
+        from django.views.generic import DetailView
+
+        class ClassView(DetailView):
+            model = cls
+
+            def dispatch(self, request, *args, **kwargs):
+                self.object = self.get_object()
+                if not self.object.can_action_view_detail(request):
+                    if request.user.is_authenticated():
+                        return redirect(settings.LOGIN_URL)
+                    raise PermissionDenied
+                return super(ClassView, self).dispatch(request, *args, **kwargs)
+        return ClassView
+
+    @classmethod
+    def get_list_view_class(cls):
+        from django.views.generic import ListView
+
+        class ClassView(ListView):
+            model = cls
+
+            def dispatch(self, request, *args, **kwargs):
+                if not self.model.can_action_view_list(request):
+                    if request.user.is_authenticated():
+                        return redirect(settings.LOGIN_URL)
+                    raise PermissionDenied
+                return super(ClassView, self).dispatch(request, *args, **kwargs)
         return ClassView
 
     @classmethod
@@ -264,6 +309,10 @@ class KernelModel(ka.ActionKernelModel, models.Model):
             model = cls
 
             def get(self, request, *args, **kwargs):
+                if not self.model.can_action_view_list(request):
+                    if request.user.is_authenticated():
+                        return redirect(settings.LOGIN_URL)
+                    raise PermissionDenied
                 export_type = self.request.GET.get('export', 'csv')
                 export = self.model.get_export_class()().export()
                 if 'csv' in export_type:
