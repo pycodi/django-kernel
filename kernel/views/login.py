@@ -22,7 +22,6 @@ from braces.forms import UserKwargModelFormMixin
 
 from .mixin import LoginRequiredMixin, WithNextUrlMixin, AuthDecoratorsMixin, CsrfProtectMixin
 
-User = get_user_model()
 
 
 class LoginView(FormView):
@@ -88,12 +87,14 @@ class PasswordResetConfirmView(AuthDecoratorsMixin, FormView):
         return super(PasswordResetConfirmView, self).dispatch(*args, **kwargs)
 
     def get_queryset(self):
+        User = get_user_model()
         return User._default_manager.all()
 
     def get_user(self):
         # django 1.5 uses uidb36, django 1.6 uses uidb64
         uidb36 = self.kwargs.get('uidb36')
         uidb64 = self.kwargs.get('uidb64')
+        User = get_user_model()
         assert bool(uidb36) ^ bool(uidb64)
         try:
             if uidb36:

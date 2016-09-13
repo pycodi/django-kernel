@@ -8,6 +8,8 @@ from django.contrib.auth.forms import (SetPasswordForm,
                                        PasswordChangeForm, PasswordResetForm)
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib import auth
+from django.core.exceptions import PermissionDenied
+
 try:
     from django.contrib.sites.shortcuts import get_current_site
 except ImportError:
@@ -30,7 +32,7 @@ except ImportError:
     def update_session_auth_hash(request, user):
         pass
 
-User = get_user_model()
+
 
 
 def _safe_resolve_url(url):
@@ -108,3 +110,15 @@ SensitivePostParametersMixin = DecoratorMixin(sensitive_post_parameters('passwor
 
 class AuthDecoratorsMixin(NeverCacheMixin, CsrfProtectMixin, SensitivePostParametersMixin):
     pass
+
+
+class KernelDispachMixin(object):
+    can_action = False
+
+    def dispatch(self, request, *args, **kwargs):
+        print(1)
+        if not self.can_action(request):
+            if not request.user.is_authenticated():
+                return redirect(settings.LOGIN_URL)
+            raise PermissionDenied
+        return super(KernelDispachMixin, self).dispatch(request, *args, **kwargs)

@@ -30,6 +30,7 @@ from kernel.utils import upload_dir, slugify
 from kernel import managers as kman
 from kernel import filters as kf
 from kernel import action as ka
+from kernel.views.mixin import KernelDispachMixin
 
 from rest_framework import serializers
 
@@ -180,21 +181,14 @@ class KernelModel(ka.ActionKernelModel, models.Model):
     def get_create_view_class(cls, fields_list):
         class_name = str(cls.__name__).lower()
 
-        class Create(CreateView):
+        class Create(CreateView, KernelDispachMixin):
             model = cls
+            can_action = cls.can_action_create
             success_url = reverse_lazy('%s:%s_list' % (cls.get_namespace(), class_name))
             if cls.get_modelform_class():
                 form_class = cls.get_modelform_class()
             else:
                 fields = fields_list
-
-            def dispatch(self, request, *args, **kwargs):
-                if not self.model.can_action_create(request):
-                    if not request.user.is_authenticated():
-                        return redirect(settings.LOGIN_URL)
-                    raise PermissionDenied
-                return super(Create, self).dispatch(request, *args, **kwargs)
-
         return Create
 
     @classmethod
@@ -203,9 +197,10 @@ class KernelModel(ka.ActionKernelModel, models.Model):
 
         class_name = str(cls.__name__).lower()
 
-        class Update(FormValidMessageMixin, UpdateView):
+        class Update(KernelDispachMixin, FormValidMessageMixin, UpdateView):
             model = cls
             form_valid_message = ''
+            can_action = cls.can_action_create
             #success_url = reverse_lazy('%s:%s_list' % (cls.get_namespace(), class_name))
             if cls.get_modelform_class():
                 form_class = cls.get_modelform_class()
@@ -222,32 +217,16 @@ class KernelModel(ka.ActionKernelModel, models.Model):
                     return self.form_valid(form)
                 else:
                     return self.form_invalid(form)
-
-            def dispatch(self, request, *args, **kwargs):
-                self.object = self.get_object()
-                if not self.object.can_action_update(request):
-                    if request.user.is_authenticated():
-                        return redirect(settings.LOGIN_URL)
-                    raise PermissionDenied
-                return super(Update, self).dispatch(request, *args, **kwargs)
-
         return Update
 
     @classmethod
     def get_delete_view_class(cls, fields_list):
 
-        class Delete(DeleteView):
+        class Delete(KernelDispachMixin, DeleteView):
             model = cls
+            can_action = cls.can_action_delete
             success_url = reverse_lazy('{}:{}_list'.format(cls._meta.app_label, str(cls.__name__).lower()))
             fields = fields_list
-
-            def dispatch(self, request, *args, **kwargs):
-                self.object = self.get_object()
-                if not self.object.can_action_delete(request):
-                    if request.user.is_authenticated():
-                        return redirect(settings.LOGIN_URL)
-                    raise PermissionDenied
-                return super(Delete, self).dispatch(request, *args, **kwargs)
 
         return Delete
 
@@ -255,48 +234,27 @@ class KernelModel(ka.ActionKernelModel, models.Model):
     def get_detail_export_view_class(cls):
         from django.views.generic import DetailView
 
-        class ClassView(DetailView):
+        class ClassView(KernelDispachMixin, DetailView):
             model = cls
-
-            def dispatch(self, request, *args, **kwargs):
-                self.object = self.get_object()
-                if not self.object.can_action_view_detail(request):
-                    if request.user.is_authenticated():
-                        return redirect(settings.LOGIN_URL)
-                    raise PermissionDenied
-                return super(ClassView, self).dispatch(request, *args, **kwargs)
-
+            can_action = cls.can_action_view_detail
         return ClassView
 
     @classmethod
     def get_detail_view_class(cls):
         from django.views.generic import DetailView
 
-        class ClassView(DetailView):
+        class ClassView(KernelDispachMixin, DetailView):
             model = cls
-
-            def dispatch(self, request, *args, **kwargs):
-                self.object = self.get_object()
-                if not self.object.can_action_view_detail(request):
-                    if request.user.is_authenticated():
-                        return redirect(settings.LOGIN_URL)
-                    raise PermissionDenied
-                return super(ClassView, self).dispatch(request, *args, **kwargs)
+            can_action = cls.can_action_view_detail
         return ClassView
 
     @classmethod
     def get_list_view_class(cls):
         from django.views.generic import ListView
 
-        class ClassView(ListView):
+        class ClassView(KernelDispachMixin, ListView):
             model = cls
-
-            def dispatch(self, request, *args, **kwargs):
-                if not self.model.can_action_view_list(request):
-                    if request.user.is_authenticated():
-                        return redirect(settings.LOGIN_URL)
-                    raise PermissionDenied
-                return super(ClassView, self).dispatch(request, *args, **kwargs)
+            can_action = cls.can_action_view_list
         return ClassView
 
     @classmethod
@@ -310,9 +268,10 @@ class KernelModel(ka.ActionKernelModel, models.Model):
 
             def get(self, request, *args, **kwargs):
                 if not self.model.can_action_view_list(request):
-                    if request.user.is_authenticated():
+                    if not request.user.is_authenticated():
                         return redirect(settings.LOGIN_URL)
                     raise PermissionDenied
+
                 export_type = self.request.GET.get('export', 'csv')
                 export = self.model.get_export_class()().export()
                 if 'csv' in export_type:
