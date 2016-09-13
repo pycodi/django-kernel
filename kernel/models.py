@@ -195,17 +195,16 @@ class KernelModel(ka.ActionKernelModel, models.Model):
         class Update(FormValidMessageMixin, UpdateView):
             model = cls
             form_valid_message = ''
-            success_url = reverse_lazy('%s:%s_list' % (cls.get_namespace(), class_name))
+            #success_url = reverse_lazy('%s:%s_list' % (cls.get_namespace(), class_name))
             if cls.get_modelform_class():
                 form_class = cls.get_modelform_class()
             else:
                 fields = fields_list
 
+            def get_success_url(self):
+                return reverse_lazy(self.object.get_absolute_url())
+
             def post(self, request, *args, **kwargs):
-                """
-                Handles POST requests, instantiating a form instance with the passed
-                POST variables and then checked for validity.
-                """
                 self.object = self.get_object()
                 form = self.get_form()
                 if form.is_valid():
@@ -285,6 +284,15 @@ class KernelModel(ka.ActionKernelModel, models.Model):
         return str(cls.__name__).lower()
 
     @classmethod
+    def urls(cls):
+        import re
+        uri_list = []
+        for m in cls.methods():
+            if re.match('get_uri_', m) and not m == 'get_uri_crud':
+                uri_list.append(getattr(cls, m)())
+        return uri_list
+
+    @classmethod
     def get_uri_create(cls):
         from django.conf.urls import url
         fields = cls.list_fields()
@@ -301,11 +309,11 @@ class KernelModel(ka.ActionKernelModel, models.Model):
     def get_uri_delete(cls):
         fields = cls.list_fields()
         return url(r'^%s/(?P<pk>\d+)/delete/' % cls.get_alias(),
-                   cls.get_delete_view_class(fields).as_view(), name='{0}_delete'.format( cls.get_alias()))
+                   cls.get_delete_view_class(fields).as_view(), name='{0}_delete'.format(cls.get_alias()))
 
     @classmethod
-    def get_uri_detail(cls, pk: str = URI):
-        return url(r'^%s/(?P<%s>[a-zA-Z0-9_A-Яа-я-]{1,300}).html$' % (str(cls.__name__).lower(), pk),
+    def get_uri_detail(cls, pk: str = URI, format: str = '.html'):
+        return url(r'^%s/(?P<%s>[a-zA-Z0-9_A-Яа-я]{1,300})%s$' % (str(cls.__name__).lower(), cls.URI, format),
                    cls.get_detail_view_class().as_view(), name='{0}_view'.format(str(cls.__name__).lower()))
 
     @classmethod
@@ -333,36 +341,18 @@ class KernelModel(ka.ActionKernelModel, models.Model):
         return uri_list
 
     @classmethod
-    def urls(cls):
-        import re
-        uri_list = []
-        for m in cls.methods():
-            if re.match('get_uri_', m) and not m == 'get_uri_crud':
-                uri_list.append(getattr(cls, m)())
-        return uri_list
-
-    @classmethod
     def get_namespace(cls):
         return cls._meta.app_label
 
     @models.permalink
-    def get_absolute_url(self, pk: str = URI):
-        attr = getattr(self, pk)
+    def get_absolute_url(self):
+        attr = getattr(self, self._meta.model.URI)
         return '{0}:{1}_view'.format(self.get_namespace(),  self.get_alias()), [str("%s" % attr)]
 
     @models.permalink
-    def get_absolute_delete_url(self, pk: str = URI):
-        attr = getattr(self, pk)
+    def get_absolute_delete_url(self):
+        attr = getattr(self, self._meta.model.URI)
         return '{0}:{1}_delete'.format(self.get_namespace(),  self.get_alias()), [str("%s" % attr)]
-
-    def check_permission_create(self):
-        return True
-
-    def check_permission_update(self):
-        return True
-
-    def check_permission_remove(self):
-        return True
 
 
 @python_2_unicode_compatible
