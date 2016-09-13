@@ -116,7 +116,6 @@ class KernelDispachMixin(object):
     can_action = False
 
     def dispatch(self, request, *args, **kwargs):
-        print(1)
         if not self.can_action(request):
             if not request.user.is_authenticated():
                 return redirect(settings.LOGIN_URL)
