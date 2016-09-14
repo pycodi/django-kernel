@@ -7,10 +7,18 @@ from kernel.middleware import CrequestMiddleware
 
 class ActionKernelModel(object):
 
+    @property
+    def action_user(self):
+        try:
+            user = km.KernelUser.objects.get(email=CrequestMiddleware.get_user())
+        except:
+            user = km.KernelUser.objects.get(id=1)
+        return user
+
     @classmethod
     def generate_perm(cls, action):
         app_label = cls._meta.app_label
-        class_name = str(cls._meta.object_name).lower()
+        class_name = cls._meta.model_name
         return '{}.{}_{}'.format(app_label, action, class_name)
 
     @classmethod
@@ -27,15 +35,22 @@ class ActionKernelModel(object):
 
     @classmethod
     def can_action_view_detail(cls, request):
-        print(cls.generate_perm('view'))
-        print(request.user.get_all_permissions())
         return request.user.has_perm(cls.generate_perm('view'))
 
     @classmethod
     def can_action_view_list(cls, request):
-        print(cls.generate_perm('view'))
-        print(request.user.get_all_permissions())
         return request.user.has_perm(cls.generate_perm('view'))
 
+    @classmethod
     def can_action_export(cls, request):
         return request.user.has_perm(cls.generate_perm('view'))
+
+
+    def can_object_action_create(self):
+        return self.action_user.has_perm(self.generate_perm('create'))
+
+    def can_object_action_update(self):
+        return self.action_user.has_perm(self.generate_perm('change'))
+
+    def can_object_action_delete(self):
+        return self.action_user.has_perm(self.generate_perm('delete'))

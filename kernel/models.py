@@ -94,6 +94,10 @@ class KernelModel(ka.ActionKernelModel, models.Model):
         return None
 
     @classmethod
+    def get_modelform_widgets(cls):
+        return None
+
+    @classmethod
     def get_modelform_class(cls):
          if 'crispy_forms' in settings.INSTALLED_APPS and cls.MODELFORM:
              from django import forms
@@ -104,6 +108,8 @@ class KernelModel(ka.ActionKernelModel, models.Model):
                  class Meta:
                      model = cls
                      fields = cls.list_fields()
+                     if cls.get_modelform_widgets():
+                        widgets = cls.get_modelform_widgets()
 
                  def __init__(self, *args, **kwargs):
                      super(Form, self).__init__( *args, **kwargs)
@@ -154,6 +160,7 @@ class KernelModel(ka.ActionKernelModel, models.Model):
     @classmethod
     def get_filter_class(cls):
         class FilterClass(django_filters.FilterSet):
+            id_list = kf.ListFilter(name='id')
             class Meta:
                 model = cls
                 fields = cls.serializer_data()
@@ -227,6 +234,11 @@ class KernelModel(ka.ActionKernelModel, models.Model):
             can_action = cls.can_action_delete
             success_url = reverse_lazy('{}:{}_list'.format(cls._meta.app_label, str(cls.__name__).lower()))
             fields = fields_list
+
+            def get_template_names(self):
+                names = super(Delete, self).get_template_names()
+                names.append("%s/layout/%s.html" % (cls._meta.app_label, self.template_name_suffix))
+                return names
 
         return Delete
 
@@ -321,6 +333,7 @@ class KernelModel(ka.ActionKernelModel, models.Model):
 
     @classmethod
     def get_uri_detail(cls, pk: str = URI, format: str = '.html'):
+        print(cls.URI)
         return url(r'^%s/(?P<%s>[a-zA-Z0-9_A-Яа-я]{1,300})%s$' % (str(cls.__name__).lower(), cls.URI, format),
                    cls.get_detail_view_class().as_view(), name='{0}_view'.format(str(cls.__name__).lower()))
 
@@ -476,14 +489,6 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
                 fields = cls.serializer_data() + ('get_name',)
 
         return KernelUserSerializer
-
-    @classmethod
-    def get_filter_class(cls):
-        class FilterClass(django_filters.FilterSet):
-            class Meta:
-                model = cls
-                fields = cls.serializer_data()
-        return FilterClass
 
 
 @python_2_unicode_compatible
