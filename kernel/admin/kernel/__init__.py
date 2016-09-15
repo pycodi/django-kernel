@@ -6,6 +6,8 @@ from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
 
 from kernel import forms as kforms
+from kernel import models as km
+from kernel.admin import action as kaa
 
 
 class BaseAdmin(admin.ModelAdmin):
@@ -35,15 +37,25 @@ class BaseAdmin(admin.ModelAdmin):
         obj.save()
 
 
-class KernelUserAdmin(BaseAdmin, UserAdmin):
+class KernelUserAdmin(UserAdmin):
     """
     Базовый класс для User моделей
     """
+    actions = [kaa.move_to_group]
+    list_per_page = 100
     ordering = ('-id',)
-    list_display = ('email', 'first_name', 'last_name', 'is_staff')
+    list_display = km.KernelUser.list_display() + ('groups_list',)
+    fieldsets = km.KernelUser.list_fieldsets()
     add_form = kforms.KernelUserCreationForm
     form = kforms.KernelUserChangeForm
     change_password_form = kforms.AdminPasswordChangeForm
+
+    def groups_list(self, obj):
+        return ', '.join([group.name for group in obj.groups.all()])
+
+
+
+
 
 
 class KernelAdmin(BaseAdmin):

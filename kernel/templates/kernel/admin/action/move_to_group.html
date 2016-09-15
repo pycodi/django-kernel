@@ -1,0 +1,12 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<form action="" method="post">
+    {% csrf_token %}
+    {{ form }}
+    <p>Группа будет назначена для следующих пользователей:</p>
+    <ul>{{ items|unordered_list }}</ul>
+    <input type="hidden" name="action" value="move_to_group" />
+    <input type="submit" name="apply" value="Сохранить" />
+</form>
+{% endblock %}

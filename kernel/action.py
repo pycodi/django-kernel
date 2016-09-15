@@ -45,7 +45,6 @@ class ActionKernelModel(object):
     def can_action_export(cls, request):
         return request.user.has_perm(cls.generate_perm('view'))
 
-
     def can_object_action_create(self):
         return self.action_user.has_perm(self.generate_perm('create'))
 

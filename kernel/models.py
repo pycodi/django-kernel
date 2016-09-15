@@ -333,7 +333,6 @@ class KernelModel(ka.ActionKernelModel, models.Model):
 
     @classmethod
     def get_uri_detail(cls, pk: str = URI, format: str = '.html'):
-        print(cls.URI)
         return url(r'^%s/(?P<%s>[a-zA-Z0-9_A-Яа-я]{1,300})%s$' % (str(cls.__name__).lower(), cls.URI, format),
                    cls.get_detail_view_class().as_view(), name='{0}_view'.format(str(cls.__name__).lower()))
 
