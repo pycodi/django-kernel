@@ -178,9 +178,9 @@ class KernelModel(ka.ActionKernelModel, models.Model):
             filter_class = cls.get_filter_class()
             list_serializer_class = cls.get_serializer_class()
 
-            def get_queryset(self):
-                queryset = super(ViewSet, self).get_queryset()
-                return queryset.filter(id__gt=1)
+            #def get_queryset(self):
+            #    queryset = super(ViewSet, self).get_queryset()
+            #    return queryset.filter(id__gt=1)
 
         return ViewSet
 
@@ -497,6 +497,36 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
                 model = cls
                 fields = ('id', 'email', 'external_id', 'last_name', 'first_name', 'middle_name', 'phone', 'date_birth')
         return FilterClass
+
+    @classmethod
+    def get_rest_viewset(cls):
+        from kernel.rest import viewsets as rv
+        from rest_framework.decorators import detail_route, list_route
+        from rest_framework.response import Response
+        from rest_framework.decorators import detail_route
+        from rest_framework.exceptions import MethodNotAllowed, PermissionDenied
+
+        class ViewSet(rv.KernelViewSets):
+            queryset = cls.objects.all()
+            serializer_class = cls.get_serializer_class()
+            filter_class = cls.get_filter_class()
+            list_serializer_class = cls.get_serializer_class()
+
+            def get_queryset(self):
+                queryset = super(ViewSet, self).get_queryset()
+                return queryset.filter(id__gt=1)
+
+            @detail_route()
+            def get_permission(self, request, pk=None):
+                user = cls.objects.get(pk=pk)
+                if not user.id == request.user.id:
+                     raise PermissionDenied
+                user_serializer_class = user.get_serializer_class()
+                return Response({'profile': user_serializer_class(user).data,
+                                 'permissions': dict(all=user.get_all_permissions(), group=user.get_group_permissions())})
+
+
+        return ViewSet
 
 
 @python_2_unicode_compatible
