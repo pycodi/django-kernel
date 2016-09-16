@@ -489,6 +489,15 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
 
         return KernelUserSerializer
 
+    @classmethod
+    def get_filter_class(cls):
+        class FilterClass(django_filters.FilterSet):
+            id_list = kf.ListFilter(name='id')
+            class Meta:
+                model = cls
+                fields = ('id', 'email', 'external_id', 'last_name', 'first_name', 'middle_name', 'phone', 'date_birth')
+        return FilterClass
+
 
 @python_2_unicode_compatible
 class KernelByModel(KernelModel):

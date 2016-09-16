@@ -116,8 +116,9 @@ class KernelDispachMixin(object):
     can_action = False
 
     def dispatch(self, request, *args, **kwargs):
-        if not self.can_action(request):
-            if not request.user.is_authenticated():
-                return redirect(settings.LOGIN_URL)
-            raise PermissionDenied
+        if self.can_action:
+            if not self.can_action(request):
+                if not request.user.is_authenticated():
+                    return redirect(settings.LOGIN_URL)
+                raise PermissionDenied
         return super(KernelDispachMixin, self).dispatch(request, *args, **kwargs)
