@@ -569,6 +569,7 @@ class KernelUnit(KernelByModel):
 
     class Meta:
         abstract = True
+        ordering = ('name',)
         #verbose_name = _('%(class)s')
         #verbose_name_plural = _('%(class)s')
 
@@ -593,6 +594,19 @@ class KernelUnit(KernelByModel):
     @classmethod
     def serializer_data(cls):
         return 'id', 'code', 'name'
+
+    @classmethod
+    def get_rest_viewset(cls):
+        from kernel.rest import viewsets as rv
+        from rest_framework.decorators import detail_route, list_route
+        from rest_framework.response import Response
+
+        class ViewSet(rv.KernelViewSets):
+            queryset = cls.objects.all().order_by('name')
+            serializer_class = cls.get_serializer_class()
+            filter_class = cls.get_filter_class()
+            list_serializer_class = cls.get_serializer_class()
+        return ViewSet
 
 
 @python_2_unicode_compatible
