@@ -317,39 +317,39 @@ class KernelModel(ka.ActionKernelModel, models.Model):
         from django.conf.urls import url
         fields = cls.list_fields()
         return url(r'^%s/new.html$' % cls.get_alias(),
-                   cls.get_create_view_class(fields).as_view(), name='{0}_create'.format(cls.get_alias()))
+                   cls.get_create_view_class(fields).as_view(), name='{0}_create'.format(str(cls.__name__).lower()))
 
     @classmethod
     def get_uri_update(cls):
         fields = cls.list_fields()
         return url(r'^%s/(?P<pk>\d+)/edit/$' %  cls.get_alias(),
-                   cls.get_update_view_class(fields).as_view(), name='{0}_update'.format( cls.get_alias()))
+                   cls.get_update_view_class(fields).as_view(), name='{0}_update'.format(str(cls.__name__).lower()))
 
     @classmethod
     def get_uri_delete(cls):
         fields = cls.list_fields()
         return url(r'^%s/(?P<pk>\d+)/delete/' % cls.get_alias(),
-                   cls.get_delete_view_class(fields).as_view(), name='{0}_delete'.format(cls.get_alias()))
+                   cls.get_delete_view_class(fields).as_view(), name='{0}_delete'.format(str(cls.__name__).lower()))
 
     @classmethod
     def get_uri_detail(cls, pk: str = URI, format: str = '.html'):
-        return url(r'^%s/(?P<%s>[a-zA-Z0-9_A-Яа-я]{1,300})%s$' % (str(cls.__name__).lower(), cls.URI, format),
+        return url(r'^%s/(?P<%s>[a-zA-Z0-9_A-Яа-я-]{1,300})%s$' % (cls.get_alias(), cls.URI, format),
                    cls.get_detail_view_class().as_view(), name='{0}_view'.format(str(cls.__name__).lower()))
 
     @classmethod
     def get_uri_list(cls):
         return url(r'^%s/$' % cls.get_alias().lower(),
-                   cls.get_list_view_class().as_view(), name='{0}_list'.format( cls.get_alias().lower()))
+                   cls.get_list_view_class().as_view(), name='{0}_list'.format(str(cls.__name__).lower()))
 
     @classmethod
     def get_uri_export(cls):
         return url(r'^%s/export/' % cls.get_alias(),
-                   cls.get_export_view_class().as_view(), name='{0}_export'.format(cls.get_alias()))
+                   cls.get_export_view_class().as_view(), name='{0}_export'.format(str(cls.__name__).lower()))
 
     @classmethod
     def get_uri_detail_export(cls):
         return url(r'^%s/(?P<pk>\d+)/export/' % cls.get_alias(),
-                   cls.get_detail_export_view_class().as_view(), name='{0}_detail_export'.format(cls.get_alias()))
+                   cls.get_detail_export_view_class().as_view(), name='{0}_detail_export'.format(str(cls.__name__).lower()))
 
     @classmethod
     def get_uri_crud(cls):
@@ -364,15 +364,19 @@ class KernelModel(ka.ActionKernelModel, models.Model):
     def get_namespace(cls):
         return cls._meta.app_label
 
+    @classmethod
+    def get_model_name(cls):
+        return cls._meta.model_name
+
     @models.permalink
     def get_absolute_url(self):
         attr = getattr(self, self._meta.model.URI)
-        return '{0}:{1}_view'.format(self.get_namespace(),  self.get_alias()), [str("%s" % attr)]
+        return '{0}:{1}_view'.format(self.get_namespace(),  self.get_model_name()), [str("%s" % attr)]
 
     @models.permalink
     def get_absolute_delete_url(self):
         attr = getattr(self, self._meta.model.URI)
-        return '{0}:{1}_delete'.format(self.get_namespace(),  self.get_alias()), [str("%s" % attr)]
+        return '{0}:{1}_delete'.format(self.get_namespace(),  self.get_model_name()), [str("%s" % attr)]
 
 
 @python_2_unicode_compatible
@@ -542,13 +546,13 @@ class KernelByModel(KernelModel):
     def save(self, *args, **kwargs):
         if not self.created_by:
             try:
-                user = KernelUser.objects.get(email=CrequestMiddleware.get_user())
+                user = CrequestMiddleware.get_user()
                 self.created_by = user
             except:
-                    pass
+                 pass
         if not self.modified_by:
             try:
-                user = KernelUser.objects.get(email=CrequestMiddleware.get_user())
+                user = CrequestMiddleware.get_user()
                 self.modified_by = user
             except:
                 pass
@@ -565,6 +569,7 @@ class KernelUnit(KernelByModel):
     name = models.CharField(_('Название'), max_length=255)
 
     REST = True
+    ADMIN = True
     ROUTE_NAME = 'unit'
 
     class Meta:
@@ -589,7 +594,7 @@ class KernelUnit(KernelByModel):
 
     @classmethod
     def list_display(cls):
-        return 'code', 'name', 'external_id', 'created_by', 'modified_date'
+        return 'id','code', 'name', 'external_id', 'created_by', 'modified_date'
 
     @classmethod
     def serializer_data(cls):
