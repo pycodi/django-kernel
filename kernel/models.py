@@ -227,13 +227,13 @@ class KernelModel(ka.ActionKernelModel, models.Model):
         return Update
 
     @classmethod
-    def get_delete_view_class(cls, fields_list):
+    def get_delete_view_class(cls):
 
         class Delete(KernelDispachMixin, DeleteView):
             model = cls
             can_action = cls.can_action_delete
             success_url = reverse_lazy('{}:{}_list'.format(cls._meta.app_label, str(cls.__name__).lower()))
-            fields = fields_list
+            fields = cls.list_fields()
 
             def get_template_names(self):
                 names = super(Delete, self).get_template_names()
@@ -329,7 +329,7 @@ class KernelModel(ka.ActionKernelModel, models.Model):
     def get_uri_delete(cls):
         fields = cls.list_fields()
         return url(r'^%s/(?P<pk>\d+)/delete/' % cls.get_alias(),
-                   cls.get_delete_view_class(fields).as_view(), name='{0}_delete'.format(str(cls.__name__).lower()))
+                   cls.get_delete_view_class().as_view(), name='{0}_delete'.format(str(cls.__name__).lower()))
 
     @classmethod
     def get_uri_detail(cls, pk: str = URI, format: str = '.html'):
@@ -450,12 +450,15 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
         """
         send_mail(subject, message, from_email, [self.email], **kwargs)
 
-    def send_email(self, template, context = {}, **kwargs):
+    def send_email(self, template, context={}, **kwargs):
         from templated_email import send_templated_mail
         from django.conf import settings
         if settings.SEND_EMAIL:
             send_templated_mail(template_name=template, from_email=settings.DEFAULT_FROM_EMAIL,
-                                    recipient_list=[self.email], context=context, **kwargs)
+                                recipient_list=[self.email], context=context, **kwargs)
+        else:
+            send_templated_mail(template_name=template, from_email=settings.DEFAULT_FROM_EMAIL,
+                                recipient_list=settings.DEBUG_EMAIL, context=context, **kwargs)
 
     @classmethod
     def get_admin_class(cls):
