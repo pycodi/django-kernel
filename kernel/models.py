@@ -199,7 +199,7 @@ class KernelModel(ka.ActionKernelModel, models.Model):
         return Create
 
     @classmethod
-    def get_update_view_class(cls, fields_list):
+    def get_update_view_class(cls):
         from braces.views import FormValidMessageMixin
 
         class_name = str(cls.__name__).lower()
@@ -207,12 +207,12 @@ class KernelModel(ka.ActionKernelModel, models.Model):
         class Update(KernelDispachMixin, FormValidMessageMixin, UpdateView):
             model = cls
             form_valid_message = ''
-            can_action = cls.can_action_create
+            can_action = cls.can_action_update
             #success_url = reverse_lazy('%s:%s_list' % (cls.get_namespace(), class_name))
             if cls.get_modelform_class():
                 form_class = cls.get_modelform_class()
             else:
-                fields = fields_list
+                fields = cls.list_fields()
 
             def get_success_url(self):
                 return reverse_lazy(self.object.get_absolute_url())
@@ -321,13 +321,11 @@ class KernelModel(ka.ActionKernelModel, models.Model):
 
     @classmethod
     def get_uri_update(cls):
-        fields = cls.list_fields()
-        return url(r'^%s/(?P<pk>\d+)/edit/$' %  cls.get_alias(),
-                   cls.get_update_view_class(fields).as_view(), name='{0}_update'.format(str(cls.__name__).lower()))
+        return url(r'^%s/(?P<pk>\d+)/edit/$' % cls.get_alias(),
+                   cls.get_update_view_class().as_view(), name='{0}_update'.format(str(cls.__name__).lower()))
 
     @classmethod
     def get_uri_delete(cls):
-        fields = cls.list_fields()
         return url(r'^%s/(?P<pk>\d+)/delete/' % cls.get_alias(),
                    cls.get_delete_view_class().as_view(), name='{0}_delete'.format(str(cls.__name__).lower()))
 
