@@ -15,6 +15,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import python_2_unicode_compatible
 from django.template.defaultfilters import truncatechars_html
 from django.conf.urls import url
+from django.contrib.contenttypes.models import ContentType
 
 
 from polymorphic.models import PolymorphicModel
@@ -65,6 +66,9 @@ class KernelModel(ka.ActionKernelModel, models.Model):
     class Meta:
         abstract = True
 
+    def get_content_type(self):
+        return ContentType.objects.get_for_model(self)
+
     @classmethod
     def methods(cls):
         from types import FunctionType
@@ -99,31 +103,28 @@ class KernelModel(ka.ActionKernelModel, models.Model):
 
     @classmethod
     def get_modelform_class(cls):
-         if 'crispy_forms' in settings.INSTALLED_APPS and cls.MODELFORM:
-             from django import forms
-             # django-crispy-forms
-             from crispy_forms.helper import FormHelper
+        if 'crispy_forms' in settings.INSTALLED_APPS and cls.MODELFORM:
+            from django import forms
+            from crispy_forms.helper import FormHelper
 
-             class Form(forms.ModelForm):
-                 class Meta:
-                     model = cls
-                     fields = cls.list_fields()
-                     if cls.get_modelform_widgets():
-                        widgets = cls.get_modelform_widgets()
+            class Form(forms.ModelForm):
+                class Meta:
+                    model = cls
+                    fields = cls.list_fields()
+                    if cls.get_modelform_widgets():
+                       widgets = cls.get_modelform_widgets()
 
-                 def __init__(self, *args, **kwargs):
-                     super(Form, self).__init__( *args, **kwargs)
-                     self.helper = FormHelper()
-                     self.helper.form_class = 'form-horizontal'
-                     self.helper.label_class = 'col-lg-2'
-                     self.helper.field_class = 'col-lg-8'
-                     self.helper.is_multipart = True
-                     self.helper.form_tag = False
-                     self.helper.form_action = '#'
-                     if cls.get_crispy_fieldset():
-                         self.helper.layout = cls.get_crispy_fieldset()
-             return Form
-         return None
+                def __init__(self, *args, **kwargs):
+                    super(Form, self).__init__( *args, **kwargs)
+                    self.helper = FormHelper()
+                    self.helper.form_class = 'form-vertical'
+                    self.helper.is_multipart = True
+                    self.helper.form_tag = False
+                    self.helper.form_action = '#'
+                    if cls.get_crispy_fieldset():
+                        self.helper.layout = cls.get_crispy_fieldset()
+            return Form
+        return None
 
     @classmethod
     def router_api(cls):
@@ -415,6 +416,7 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
 
     REST = True
     ADMIN = True
+    MODELFORM = True
     ROUTE_NAME = 'users'
 
     class Meta:
@@ -532,6 +534,11 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
 
 
         return ViewSet
+
+    @classmethod
+    def get_update_view_class(cls):
+        from kernel.views.user import KernelUserUpdateView
+        return KernelUserUpdateView
 
 
 @python_2_unicode_compatible
