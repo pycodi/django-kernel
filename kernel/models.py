@@ -209,14 +209,13 @@ class KernelModel(ka.ActionKernelModel, models.Model):
             model = cls
             form_valid_message = ''
             can_action = cls.can_action_update
-            #success_url = reverse_lazy('%s:%s_list' % (cls.get_namespace(), class_name))
             if cls.get_modelform_class():
                 form_class = cls.get_modelform_class()
             else:
                 fields = cls.list_fields()
 
             def get_success_url(self):
-                return reverse_lazy(self.object.get_absolute_url())
+                return self.object.get_absolute_url()
 
             def post(self, request, *args, **kwargs):
                 self.object = self.get_object()
