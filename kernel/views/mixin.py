@@ -33,8 +33,6 @@ except ImportError:
         pass
 
 
-
-
 def _safe_resolve_url(url):
     return six.text_type(resolve_url(url))
 

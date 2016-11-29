@@ -10,19 +10,16 @@ except ImportError:
     from distutils.core import setup
 
 
-readme = open('README.md').read()
+
 
 setup(
     name='django-kernel',
-    version='0.1',
+    version='0.2.4',
     description="""Kenrel Model for Django""",
-    long_description=readme + '\n\n',
     author='Nikita Kryuchkov',
     author_email='info@pycode.net',
     url='https://github.com/pycodi/django-kernel',
-    packages=[
-        'kernel',
-    ],
+    packages=['kernel',],
     include_package_data=True,
     install_requires=[
         'Django>=1.9'

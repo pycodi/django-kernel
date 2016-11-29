@@ -27,7 +27,7 @@ class BaseViewSets(object):
         return api_settings.DEFAULT_FILTER_BACKENDS
 
     def get_serializer_class(self):
-        if hasattr(self, 'list_serializer_class'):
+        if hasattr(self, 'list_serializer_class') or hasattr(self, 'serializer_class_list'):
             if self.list_serializer_class:
                 if self.request.method == 'PUT':
                     return self.serializer_class
@@ -44,8 +44,7 @@ class BaseViewSets(object):
 class KernelViewSets(BaseViewSets, viewsets.ModelViewSet):
 
     def retrieve(self, *args, **kwargs):
-        print(122)
-        if hasattr(self, 'retrieve_serializer_class'):
+        if hasattr(self, 'retrieve_serializer_class') or hasattr(self, 'serializer_class_retrieve'):
             if self.retrieve_serializer_class:
                 self.serializer_class = self.retrieve_serializer_class
         retrieve = super(KernelViewSets, self).retrieve(*args, **kwargs)

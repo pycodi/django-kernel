@@ -136,7 +136,40 @@ class KernelModel(ka.ActionKernelModel, models.Model):
 
     @classmethod
     def serializer_data(cls):
-        return [f.name for f in cls._meta.get_fields()]
+        return [f.name for f in cls._meta.get_fields() if not f.related_model]
+
+    @classmethod
+    def serializer_class(cls):
+        """
+        class Serializer(serializers.ModelSerializer):
+            class Meta:
+                model = cls
+                fields = cls.serializer_data()
+        return Serializer
+        """
+        class Serializer(serializers.ModelSerializer):
+            class Meta:
+                model = cls
+                fields = cls.serializer_data()
+        return Serializer
+
+    @classmethod
+    def serializer_class_list(cls):
+        return cls.serializer_class()
+
+    @classmethod
+    def serializer_viewsets(cls):
+        from kernel.rest import viewsets as rv
+        from rest_framework.decorators import detail_route, list_route
+        from rest_framework.response import Response
+
+        class ViewSet(rv.KernelViewSets):
+            queryset = cls.objects.all()
+            serializer_class = cls.get_serializer_class()
+            filter_class = cls.get_filter_class()
+            list_serializer_class = cls.get_list_serializer_class()
+
+        return ViewSet
 
     @classmethod
     def export_data(cls):
@@ -148,15 +181,11 @@ class KernelModel(ka.ActionKernelModel, models.Model):
 
     @classmethod
     def get_serializer_class(cls):
-        class Serializer(serializers.ModelSerializer):
-            class Meta:
-                model = cls
-                fields = cls.serializer_data()
-        return Serializer
+        return cls.serializer_class()
 
     @classmethod
     def get_list_serializer_class(cls):
-        return False
+        return cls.serializer_class_list()
 
     @classmethod
     def get_filter_class(cls):
@@ -167,26 +196,9 @@ class KernelModel(ka.ActionKernelModel, models.Model):
                 fields = cls.serializer_data()
         return FilterClass
 
-    @classmethod
-    def get_rest_viewset(cls):
-        from kernel.rest import viewsets as rv
-        from rest_framework.decorators import detail_route, list_route
-        from rest_framework.response import Response
-
-        class ViewSet(rv.KernelViewSets):
-            queryset = cls.objects.all()
-            serializer_class = cls.get_serializer_class()
-            filter_class = cls.get_filter_class()
-            list_serializer_class = cls.get_serializer_class()
-
-            #def get_queryset(self):
-            #    queryset = super(ViewSet, self).get_queryset()
-            #    return queryset.filter(id__gt=1)
-
-        return ViewSet
 
     @classmethod
-    def get_create_view_class(cls, fields_list):
+    def get_create_view_class(cls):
         class_name = str(cls.__name__).lower()
 
         class Create(CreateView, KernelDispachMixin):
@@ -196,13 +208,12 @@ class KernelModel(ka.ActionKernelModel, models.Model):
             if cls.get_modelform_class():
                 form_class = cls.get_modelform_class()
             else:
-                fields = fields_list
+                fields = cls.list_fields()
         return Create
 
     @classmethod
     def get_update_view_class(cls):
         from braces.views import FormValidMessageMixin
-
         class_name = str(cls.__name__).lower()
 
         class Update(KernelDispachMixin, FormValidMessageMixin, UpdateView):
@@ -214,8 +225,8 @@ class KernelModel(ka.ActionKernelModel, models.Model):
             else:
                 fields = cls.list_fields()
 
-            def get_success_url(self):
-                return self.object.get_absolute_url()
+            #def get_success_url(self):
+            #    return self.object.get_absolute_url()
 
             def post(self, request, *args, **kwargs):
                 self.object = self.get_object()
@@ -267,6 +278,7 @@ class KernelModel(ka.ActionKernelModel, models.Model):
         class ClassView(KernelDispachMixin, ListView):
             model = cls
             can_action = cls.can_action_view_list
+            paginate_by = 100
         return ClassView
 
     @classmethod
@@ -317,7 +329,7 @@ class KernelModel(ka.ActionKernelModel, models.Model):
         from django.conf.urls import url
         fields = cls.list_fields()
         return url(r'^%s/new.html$' % cls.get_alias(),
-                   cls.get_create_view_class(fields).as_view(), name='{0}_create'.format(str(cls.__name__).lower()))
+                   cls.get_create_view_class().as_view(), name='{0}_create'.format(str(cls.__name__).lower()))
 
     @classmethod
     def get_uri_update(cls):
@@ -375,6 +387,14 @@ class KernelModel(ka.ActionKernelModel, models.Model):
     def get_absolute_delete_url(self):
         attr = getattr(self, self._meta.model.URI)
         return '{0}:{1}_delete'.format(self.get_namespace(),  self.get_model_name()), [str("%s" % attr)]
+
+    #
+    #
+    # Old class
+    @classmethod
+    def get_rest_viewset(cls):
+        return cls.serializer_viewsets()
+
 
 
 @python_2_unicode_compatible
@@ -479,7 +499,7 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
 
     @classmethod
     def serializer_data(cls):
-        return 'id', 'email', 'external_id', 'last_name', 'first_name', 'middle_name', 'phone', 'date_birth', 'photo',
+        return 'id', 'email', 'external_id', 'last_name', 'first_name', 'middle_name', 'phone', 'date_birth', 'photo'
 
     @classmethod
     def get_serializer_class(cls):
@@ -568,6 +588,8 @@ class KernelByModel(KernelModel):
     @classmethod
     def list_display(cls):
         return 'id', 'external_id', 'created_by'
+
+
 
 
 @python_2_unicode_compatible
