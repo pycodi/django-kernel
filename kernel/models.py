@@ -304,7 +304,10 @@ class KernelModel(ka.ActionKernelModel, models.Model):
                     response = HttpResponse(content_type='application/vnd.ms-excel')
                 else:
                     response = HttpResponse(content_type='text/csv')
-                response['Content-Disposition'] = 'attachment; filename="%s.%s"' % (slugify(cls.get_alias()) , export_type)
+                filename = slugify(cls.get_alias())
+                if cls._meta.verbose_name:
+                    filename = slugify(cls._meta.verbose_name)
+                response['Content-Disposition'] = 'attachment; filename="%s.%s"' % (filename, export_type)
                 response.write(export.__getattribute__(export_type))
                 return response
         return ClassView
