@@ -9,6 +9,7 @@ from rest_framework import viewsets, mixins, permissions
 from rest_framework.filters import DjangoObjectPermissionsFilter, OrderingFilter, SearchFilter, DjangoFilterBackend
 from rest_framework.permissions import IsAuthenticated, DjangoModelPermissions, DjangoObjectPermissions
 from rest_framework.settings import api_settings
+from rest_framework.response import Response
 from rest_framework_extensions.cache.decorators import (cache_response)
 
 import pprint
@@ -44,11 +45,16 @@ class BaseViewSets(object):
 class KernelViewSets(BaseViewSets, viewsets.ModelViewSet):
 
     def retrieve(self, *args, **kwargs):
-        if hasattr(self, 'retrieve_serializer_class') or hasattr(self, 'serializer_class_retrieve'):
-            if self.retrieve_serializer_class:
-                self.serializer_class = self.retrieve_serializer_class
-        retrieve = super(KernelViewSets, self).retrieve(*args, **kwargs)
-        return retrieve
+        instance = self.get_object()
+        if hasattr(self, 'retrieve_serializer_class'):
+            if hasattr(self, 'serializer_class_retrieve'):
+                serializer = self.serializer_class_retrieve(instance)
+            else:
+                serializer = self.get_serializer(instance)
+        else:
+            serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
 
 
 class KernelReadOnlyViewSets(BaseViewSets, viewsets.ReadOnlyModelViewSet):

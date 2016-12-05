@@ -489,7 +489,7 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
 
     @staticmethod
     def list_display():
-        return 'email', 'last_name', 'first_name', 'middle_name', 'phone', 'date_birth'
+        return 'email', 'last_name', 'first_name', 'middle_name', 'phone', 'date_birth', 'is_active'
 
     @staticmethod
     def list_fieldsets():
@@ -658,7 +658,7 @@ class KernelPage(KernelByModel):
         (PUBLISHED_STATUS, 'Published')
     )
 
-    publisher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    publisher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True)
     title = models.CharField(_(u'Заголовок'), max_length=255)
     longtitle = models.CharField(_(u'Расширенный заголовок'), blank=True, max_length=255)
     keywords = models.CharField(_(u'Ключевые слова'), blank=True, max_length=255)
