@@ -160,7 +160,7 @@ class PasswordResetCompleteView(TemplateView):
 
 
 class PasswordChangeView(LoginRequiredMixin, WithNextUrlMixin, AuthDecoratorsMixin, FormView):
-    template_name = 'registration/password_change_form.html'
+    template_name = 'kernel/password_change_form.html'
     form_class = PasswordChangeForm
     success_url = reverse_lazy('password_change_done')
 

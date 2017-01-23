@@ -196,12 +196,11 @@ class KernelModel(ka.ActionKernelModel, models.Model):
                 fields = cls.serializer_data()
         return FilterClass
 
-
     @classmethod
     def get_create_view_class(cls):
         class_name = str(cls.__name__).lower()
 
-        class Create(CreateView, KernelDispachMixin):
+        class Create(KernelDispachMixin, CreateView):
             model = cls
             can_action = cls.can_action_create
             success_url = reverse_lazy('%s:%s_list' % (cls.get_namespace(), class_name))
@@ -213,29 +212,8 @@ class KernelModel(ka.ActionKernelModel, models.Model):
 
     @classmethod
     def get_update_view_class(cls):
-        from braces.views import FormValidMessageMixin
-        class_name = str(cls.__name__).lower()
-
-        class Update(KernelDispachMixin, FormValidMessageMixin, UpdateView):
-            model = cls
-            form_valid_message = ''
-            can_action = cls.can_action_update
-            if cls.get_modelform_class():
-                form_class = cls.get_modelform_class()
-            else:
-                fields = cls.list_fields()
-
-            #def get_success_url(self):
-            #    return self.object.get_absolute_url()
-
-            def post(self, request, *args, **kwargs):
-                self.object = self.get_object()
-                form = self.get_form()
-                if form.is_valid():
-                    return self.form_valid(form)
-                else:
-                    return self.form_invalid(form)
-        return Update
+        from kernel.views.mixin import KernelViewSetMixin
+        return KernelViewSetMixin.update_class_form(cls)
 
     @classmethod
     def get_delete_view_class(cls):
@@ -386,18 +364,31 @@ class KernelModel(ka.ActionKernelModel, models.Model):
         attr = getattr(self, self._meta.model.URI)
         return '{0}:{1}_view'.format(self.get_namespace(),  self.get_model_name()), [str("%s" % attr)]
 
+    @classmethod
+    @models.permalink
+    def get_absolute_create_url(self):
+        return '{0}:{1}_create'.format(self.get_namespace(), self.get_model_name()), []
+
     @models.permalink
     def get_absolute_delete_url(self):
         attr = getattr(self, self._meta.model.URI)
         return '{0}:{1}_delete'.format(self.get_namespace(),  self.get_model_name()), [str("%s" % attr)]
 
+    @models.permalink
+    def get_absolute_update_url(self):
+        attr = getattr(self, self._meta.model.URI)
+        return '{0}:{1}_update'.format(self.get_namespace(), self.get_model_name()), [str("%s" % attr)]
+
+    #
+    #
+    #
+    #
     #
     #
     # Old class
     @classmethod
     def get_rest_viewset(cls):
         return cls.serializer_viewsets()
-
 
 
 @python_2_unicode_compatible
@@ -510,11 +501,12 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
 
         class KernelUserSerializer(serializers.ModelSerializer):
             get_name = serializers.CharField(source='name')
+            detail_url = serializers.CharField(source='get_absolute_url')
             photo = StdImageFieldSerializer()
 
             class Meta:
                 model = cls
-                fields = cls.serializer_data() + ('get_name',)
+                fields = cls.serializer_data() + ('get_name', 'detail_url')
 
         return KernelUserSerializer
 
@@ -553,14 +545,12 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
                 user_serializer_class = user.get_serializer_class()
                 return Response({'profile': user_serializer_class(user).data,
                                  'permissions': dict(all=user.get_all_permissions(), group=user.get_group_permissions())})
-
-
         return ViewSet
 
     @classmethod
     def get_update_view_class(cls):
-        from kernel.views.user import KernelUserUpdateView
-        return KernelUserUpdateView
+        from kernel.views.user import KernelUserUpdateMixin
+        return KernelUserUpdateMixin.update_form_class(cls)
 
 
 @python_2_unicode_compatible
@@ -607,8 +597,6 @@ class KernelUnit(KernelByModel):
     class Meta:
         abstract = True
         ordering = ('name',)
-        #verbose_name = _('%(class)s')
-        #verbose_name_plural = _('%(class)s')
 
     def __str__(self):
         return self.name
@@ -621,7 +609,7 @@ class KernelUnit(KernelByModel):
 
             class Meta:
                 model = cls
-                fields = cls.serializer_data() + ('code_list','id_list')
+                fields = cls.serializer_data() + ('code_list', 'id_list')
         return FilterClass
 
     @classmethod
@@ -642,7 +630,7 @@ class KernelUnit(KernelByModel):
             queryset = cls.objects.all().order_by('name')
             serializer_class = cls.get_serializer_class()
             filter_class = cls.get_filter_class()
-            list_serializer_class = cls.get_serializer_class()
+            list_serializer_class = cls.serializer_class_list()
         return ViewSet
 
 
@@ -663,8 +651,20 @@ class KernelPage(KernelByModel):
     longtitle = models.CharField(_(u'Расширенный заголовок'), blank=True, max_length=255)
     keywords = models.CharField(_(u'Ключевые слова'), blank=True, max_length=255)
     description = models.CharField(_(u'Описание'), blank=True, max_length=255)
-    slug = models.SlugField(_('URL'), help_text=_(u'Использовать в качестве урла транскрипцию ключевых слов'), max_length=120, unique=True, blank=True)
-    image = StdImageField(upload_to=upload_dir, blank=True, variations={'promotion': (775, 275, True), 'large': (600, 400), 'thumbnail': (75, 75, True), 'medium': (300, 200)})
+    slug = models.SlugField(
+        _('URL'), help_text=_(u'Использовать в качестве урла транскрипцию ключевых слов'),
+        max_length=120,
+        unique=True, blank=True
+    )
+    image = StdImageField(
+        upload_to=upload_dir,
+        null=True, blank=True,
+        variations={
+            'promotion': (775, 275, True),
+            'large': (600, 400),
+            'thumbnail': (75, 75, True),
+            'medium': (300, 200)}
+    )
     introtext = models.TextField(verbose_name=_(u'Аннотация'))
     content = RichTextUploadingField(verbose_name=_(u'Статья'))
 
