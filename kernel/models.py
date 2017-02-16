@@ -51,9 +51,9 @@ class KernelPermissions(PermissionsMixin):
 
 @python_2_unicode_compatible
 class KernelModel(ka.ActionKernelModel, models.Model):
-    external_id = models.CharField(_('External Code'), max_length=120, editable=False, default=uuid.uuid4)
-    created_date = models.DateTimeField(auto_now_add=True)
-    modified_date = models.DateTimeField(auto_now=True)
+    external_id = models.CharField(_('Внешний ключ'), max_length=120, editable=False, default=uuid.uuid4)
+    created_date = models.DateTimeField(_('Создан'), auto_now_add=True)
+    modified_date = models.DateTimeField(_('Изменен'), auto_now=True)
 
     REST = False
     ADMIN = False
@@ -68,6 +68,12 @@ class KernelModel(ka.ActionKernelModel, models.Model):
 
     def get_content_type(self):
         return ContentType.objects.get_for_model(self)
+
+    def json_format(self):
+        return self.serializer_class_list()(self).data
+
+    def get_verbose_name(self, _name):
+        return self._meta.get_field(_name).verbose_name
 
     @classmethod
     def methods(cls):
@@ -106,6 +112,7 @@ class KernelModel(ka.ActionKernelModel, models.Model):
         if 'crispy_forms' in settings.INSTALLED_APPS and cls.MODELFORM:
             from django import forms
             from crispy_forms.helper import FormHelper
+            from crispy_forms.layout import Submit, Button
 
             class Form(forms.ModelForm):
                 class Meta:
@@ -119,8 +126,9 @@ class KernelModel(ka.ActionKernelModel, models.Model):
                     self.helper = FormHelper()
                     self.helper.form_class = 'form-vertical'
                     self.helper.is_multipart = True
-                    self.helper.form_tag = False
                     self.helper.form_action = '#'
+                    self.helper.add_input(Button('back',  _('Отменить'), css_class='btn', onclick="window.history.back();"))
+                    self.helper.add_input(Submit('submit', _('Сохранить'), css_class='btn'))
                     if cls.get_crispy_fieldset():
                         self.helper.layout = cls.get_crispy_fieldset()
             return Form
@@ -154,6 +162,21 @@ class KernelModel(ka.ActionKernelModel, models.Model):
         return Serializer
 
     @classmethod
+    def table_class(cls):
+        import django_tables2 as tables
+
+        class Tab(tables.Table):
+            id = tables.TemplateColumn(
+                template_code='<a href="{{ record.get_absolute_url }}" title="{{ record.subject }}" target="_blank">{{ record.id }}</a>',
+                verbose_name='ID', attrs={'th': {'width': '60'}}
+            )
+
+            class Meta:
+                model = cls
+                fields = cls.list_display()
+        return Tab
+
+    @classmethod
     def serializer_class_list(cls):
         return cls.serializer_class()
 
@@ -180,6 +203,10 @@ class KernelModel(ka.ActionKernelModel, models.Model):
         return '__all__'
 
     @classmethod
+    def list_display(cls):
+        return [f.name for f in cls._meta.get_fields() if not f.related_model]
+
+    @classmethod
     def get_serializer_class(cls):
         return cls.serializer_class()
 
@@ -188,27 +215,20 @@ class KernelModel(ka.ActionKernelModel, models.Model):
         return cls.serializer_class_list()
 
     @classmethod
-    def get_filter_class(cls):
+    def filter_class(cls):
         class FilterClass(django_filters.FilterSet):
             id_list = kf.ListFilter(name='id')
+
             class Meta:
                 model = cls
                 fields = cls.serializer_data()
+
         return FilterClass
 
     @classmethod
     def get_create_view_class(cls):
-        class_name = str(cls.__name__).lower()
-
-        class Create(KernelDispachMixin, CreateView):
-            model = cls
-            can_action = cls.can_action_create
-            success_url = reverse_lazy('%s:%s_list' % (cls.get_namespace(), class_name))
-            if cls.get_modelform_class():
-                form_class = cls.get_modelform_class()
-            else:
-                fields = cls.list_fields()
-        return Create
+        from kernel.views.mixin import KernelViewSetMixin
+        return KernelViewSetMixin.create_class_form(cls)
 
     @classmethod
     def get_update_view_class(cls):
@@ -379,6 +399,11 @@ class KernelModel(ka.ActionKernelModel, models.Model):
         attr = getattr(self, self._meta.model.URI)
         return '{0}:{1}_update'.format(self.get_namespace(), self.get_model_name()), [str("%s" % attr)]
 
+    @models.permalink
+    def get_absolute_export_url(self):
+        attr = getattr(self, self._meta.model.URI)
+        return '{0}:{1}_export'.format(self.get_namespace(), self.get_model_name()), [str("%s" % attr)]
+
     #
     #
     #
@@ -389,6 +414,10 @@ class KernelModel(ka.ActionKernelModel, models.Model):
     @classmethod
     def get_rest_viewset(cls):
         return cls.serializer_viewsets()
+
+    @classmethod
+    def get_filter_class(cls):
+        return cls.filter_class()
 
 
 @python_2_unicode_compatible
@@ -555,8 +584,8 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
 
 @python_2_unicode_compatible
 class KernelByModel(KernelModel):
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name=_('Создан'),
-           editable=False, related_name="kernel_%(class)s_created_by", blank=True, null=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name=_('Создал'),
+           related_name="kernel_%(class)s_created_by", blank=True, null=True)
     modified_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name=_('Изменил'),
            editable=False, related_name="kernel_%(class)s_modified_by", blank=True, null=True)
 
@@ -583,8 +612,6 @@ class KernelByModel(KernelModel):
         return 'id', 'external_id', 'created_by'
 
 
-
-
 @python_2_unicode_compatible
 class KernelUnit(KernelByModel):
     code = models.CharField(_('Код'), max_length=255, unique=True, default=uuid.uuid4)
@@ -602,7 +629,7 @@ class KernelUnit(KernelByModel):
         return self.name
 
     @classmethod
-    def get_filter_class(cls):
+    def filter_class(cls):
         class FilterClass(django_filters.FilterSet):
             code_list = kf.ListFilter(name='code')
             id_list = kf.ListFilter(name='id')
@@ -614,22 +641,20 @@ class KernelUnit(KernelByModel):
 
     @classmethod
     def list_display(cls):
-        return 'id','code', 'name', 'external_id', 'created_by', 'modified_date'
+        return 'id', 'code', 'name', 'external_id', 'created_by', 'modified_date'
 
     @classmethod
     def serializer_data(cls):
-        return 'id', 'code', 'name'
+        return 'id', 'code', 'name', 'external_id', 'created_by', 'modified_date'
 
     @classmethod
     def get_rest_viewset(cls):
         from kernel.rest import viewsets as rv
-        from rest_framework.decorators import detail_route, list_route
-        from rest_framework.response import Response
 
         class ViewSet(rv.KernelViewSets):
             queryset = cls.objects.all().order_by('name')
             serializer_class = cls.get_serializer_class()
-            filter_class = cls.get_filter_class()
+            filter_class = cls.filter_class()
             list_serializer_class = cls.serializer_class_list()
         return ViewSet
 
