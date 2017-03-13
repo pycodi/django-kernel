@@ -147,6 +147,10 @@ class KernelModel(ka.ActionKernelModel, models.Model):
         return [f.name for f in cls._meta.get_fields() if not f.related_model]
 
     @classmethod
+    def filters_data(cls):
+        return cls.serializer_data()
+
+    @classmethod
     def serializer_class(cls):
         """
         class Serializer(serializers.ModelSerializer):
@@ -216,12 +220,28 @@ class KernelModel(ka.ActionKernelModel, models.Model):
 
     @classmethod
     def filter_class(cls):
-        class FilterClass(django_filters.FilterSet):
+        import rest_framework_filters as filters
+
+        class FilterClass(filters.FilterSet):
             id_list = kf.ListFilter(name='id')
 
             class Meta:
                 model = cls
-                fields = cls.serializer_data()
+                fields = cls.filters_data()
+                filter_overrides = {
+                    models.FileField: {
+                        'filter_class': django_filters.CharFilter,
+                        'extra': lambda f: {
+                            'lookup_expr': 'icontains',
+                        },
+                    },
+                    models.ImageField: {
+                        'filter_class': django_filters.CharFilter,
+                        'extra': lambda f: {
+                            'lookup_expr': 'icontains',
+                        },
+                    },
+                }
 
         return FilterClass
 
@@ -294,14 +314,17 @@ class KernelModel(ka.ActionKernelModel, models.Model):
                         return redirect(settings.LOGIN_URL)
                     raise PermissionDenied
 
+                queryset_list = cls.filter_class()(self.request.GET, queryset=self.get_queryset())
+                export = self.model.get_export_class()().export(queryset_list)
+
                 export_type = self.request.GET.get('export', 'csv')
-                export = self.model.get_export_class()().export()
                 if 'csv' in export_type:
                     response = HttpResponse(content_type='text/csv')
                 elif 'xlsx' in export_type:
                     response = HttpResponse(content_type='application/vnd.ms-excel')
                 else:
                     response = HttpResponse(content_type='text/csv')
+
                 filename = slugify(cls.get_alias())
                 if cls._meta.verbose_name:
                     filename = slugify(cls._meta.verbose_name)
@@ -545,7 +568,7 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
             id_list = kf.ListFilter(name='id')
             class Meta:
                 model = cls
-                fields = ('id', 'email', 'external_id', 'last_name', 'first_name', 'middle_name', 'phone', 'date_birth')
+                fields = ('id', 'email', 'external_id', 'last_name', 'first_name', 'middle_name', 'date_birth')
         return FilterClass
 
     @classmethod
@@ -630,13 +653,13 @@ class KernelUnit(KernelByModel):
 
     @classmethod
     def filter_class(cls):
-        class FilterClass(django_filters.FilterSet):
+        class FilterClass(super().filter_class()):
             code_list = kf.ListFilter(name='code')
             id_list = kf.ListFilter(name='id')
 
             class Meta:
                 model = cls
-                fields = cls.serializer_data() + ('code_list', 'id_list')
+                fields = cls.filters_data() + ('code_list', 'id_list')
         return FilterClass
 
     @classmethod
@@ -714,7 +737,15 @@ class KernelPage(KernelByModel):
 
     @classmethod
     def list_display(cls):
-        return 'id',  'title', 'status',
+        return 'id',  'title', 'longtitle', 'status',
+
+    @classmethod
+    def list_fieldsets(cls):
+        return (
+           (_('Основная информация'), {'fields': ('longtitle', 'title', 'publisher', ('slug', 'status'), 'image', 'introtext', 'content')}),
+           (_('SEO'), {'fields': ('keywords', 'description')}),
+           #(_('Дополнительно'), {'fields': ('order', )}),
+        )
 
     @property
     def word_count(self):
