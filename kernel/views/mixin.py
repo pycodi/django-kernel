@@ -23,15 +23,12 @@ from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.generic import FormView, TemplateView, RedirectView, ListView
 
-from braces.views import FormValidMessageMixin, MessageMixin
-from viewflow.flow.views import FlowViewMixin, get_next_task_url, ProcessListView
+
 from django_tables2.views import SingleTableView, SingleTableMixin
 from django_filters.views import FilterView, BaseFilterView
 
 from braces.views import FormValidMessageMixin
 from urllib import parse
-
-from kernel import filters as kf
 
 
 import warnings
