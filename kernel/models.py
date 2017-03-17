@@ -62,6 +62,7 @@ class KernelModel(ka.ActionKernelModel, models.Model):
     EXPORT = False
     MODELFORM = False
     URI = 'pk'
+    URI_FORMAT_DETAIL = None
 
     class Meta:
         abstract = True
@@ -367,7 +368,8 @@ class KernelModel(ka.ActionKernelModel, models.Model):
 
     @classmethod
     def get_uri_detail(cls, pk: str = URI, format: str = '.html'):
-        return url(r'^%s/(?P<%s>[a-zA-Z0-9_A-Яа-я-]{1,300})%s$' % (cls.get_alias(), cls.URI, format),
+        return url(r'^%s/(?P<%s>[a-zA-Z0-9_A-Яа-я-]{1,300})%s$' % (cls.get_alias(), cls.URI,
+                                                                   (cls.URI_FORMAT_DETAIL if cls.URI_FORMAT_DETAIL else format)),
                    cls.get_detail_view_class().as_view(), name='{0}_view'.format(str(cls.__name__).lower()))
 
     @classmethod

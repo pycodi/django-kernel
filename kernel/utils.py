@@ -9,7 +9,6 @@ from datetime import timedelta
 
 from slugify import slugify as aw_slugify
 
-__author__ = 'pyCode'
 
 
 def slugify(str):
