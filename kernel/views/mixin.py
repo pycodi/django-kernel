@@ -163,6 +163,12 @@ class KernelViewSetMixin(KernelBaseMixin):
                 super().__init__(*args, **kwargs)
                 for key, value in _kwargs.items():
                     self.__dict__[key] = value
+
+            def get_context_data(self, **kwargs):
+                context = super().get_context_data(**kwargs)
+                context['class'] = _cls
+                return context
+
         return Create
 
     @staticmethod

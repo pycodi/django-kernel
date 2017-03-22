@@ -61,6 +61,7 @@ class KernelModel(ka.ActionKernelModel, models.Model):
     ROUTE_NAME = 'kernel'
     EXPORT = False
     MODELFORM = False
+    MODELFORM_SUBMIT = None
     URI = 'pk'
     URI_FORMAT_DETAIL = None
 
@@ -129,7 +130,7 @@ class KernelModel(ka.ActionKernelModel, models.Model):
                     self.helper.is_multipart = True
                     self.helper.form_action = '#'
                     self.helper.add_input(Button('back',  _('Отменить'), css_class='btn', onclick="window.history.back();"))
-                    self.helper.add_input(Submit('submit', _('Сохранить'), css_class='btn'))
+                    self.helper.add_input(Submit('submit', (_('Сохранить') if not cls.MODELFORM_SUBMIT else cls.MODELFORM_SUBMIT), css_class='btn'))
                     if cls.get_crispy_fieldset():
                         self.helper.layout = cls.get_crispy_fieldset()
             return Form
@@ -411,8 +412,8 @@ class KernelModel(ka.ActionKernelModel, models.Model):
 
     @classmethod
     @models.permalink
-    def get_absolute_create_url(self):
-        return '{0}:{1}_create'.format(self.get_namespace(), self.get_model_name()), []
+    def get_absolute_create_url(cls):
+        return '{0}:{1}_create'.format(cls.get_namespace(), cls.get_model_name()), []
 
     @models.permalink
     def get_absolute_delete_url(self):
