@@ -2,9 +2,7 @@ from django.contrib.auth.models import (AbstractBaseUser, PermissionsMixin)
 from django.core.urlresolvers import reverse_lazy
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.core.exceptions import PermissionDenied
-from django.utils.decorators import method_decorator
 from django.shortcuts import redirect
-from django.http import HttpResponseRedirect
 from django.core.mail import send_mail
 from django.core.cache import cache
 from django.utils.html import strip_tags
@@ -16,15 +14,15 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.template.defaultfilters import truncatechars_html
 from django.conf.urls import url
 from django.contrib.contenttypes.models import ContentType
-
-
+####
+####
 from polymorphic.models import PolymorphicModel
 from stdimage.models import StdImageField
 from ckeditor_uploader.fields import RichTextUploadingField
-
-
+###
+###
 from .constant import Lang
-
+####
 from kernel.managers.user import PortalEmailUserMixinManager
 from kernel.middleware import CrequestMiddleware
 from kernel.utils import upload_dir, slugify
@@ -32,7 +30,9 @@ from kernel import managers as kman
 from kernel import filters as kf
 from kernel import action as ka
 from kernel.views.mixin import KernelDispachMixin
-
+###
+from logmail import models as lm
+####
 from rest_framework import serializers
 
 import django_filters
@@ -519,14 +519,17 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
         send_mail(subject, message, from_email, [self.email], **kwargs)
 
     def send_email(self, template, context={}, **kwargs):
-        from templated_email import send_templated_mail
+        from templated_email import send_templated_mail, get_templated_mail
         from django.conf import settings
         if settings.SEND_EMAIL:
-            send_templated_mail(template_name=template, from_email=settings.DEFAULT_FROM_EMAIL,
+            email = send_templated_mail(template_name=template, from_email=settings.DEFAULT_FROM_EMAIL,
                                 recipient_list=[self.email], context=context, **kwargs)
         else:
-            send_templated_mail(template_name=template, from_email=settings.DEFAULT_FROM_EMAIL,
+            email = send_templated_mail(template_name=template, from_email=settings.DEFAULT_FROM_EMAIL,
                                 recipient_list=settings.DEBUG_EMAIL, context=context, **kwargs)
+
+        lm.Email.objects.logging(settings.DEFAULT_FROM_EMAIL, self.email, template, get_templated_mail(template, context).message() )
+
 
     @classmethod
     def get_admin_class(cls):
@@ -683,6 +686,12 @@ class KernelUnit(KernelByModel):
             filter_class = cls.filter_class()
             list_serializer_class = cls.serializer_class_list()
         return ViewSet
+
+    @classmethod
+    def get_admin_class(cls):
+        class Admin(super().get_admin_class()):
+            search_fields = ('code', 'name', )
+        return Admin
 
 
 @python_2_unicode_compatible

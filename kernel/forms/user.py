@@ -19,7 +19,7 @@ class KernelAdminPasswordChangeForm(AdminPasswordChangeForm):
 class KernelUserCreationForm(UserCreationForm):
     class Meta:
         model = km.KernelUser
-        fields = ("email",)
+        fields = ("email", )
 
 
 class UserUpdateViewForm(forms.ModelForm):
