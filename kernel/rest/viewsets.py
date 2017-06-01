@@ -56,7 +56,6 @@ class KernelViewSets(BaseViewSets, viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-
 class KernelReadOnlyViewSets(BaseViewSets, viewsets.ReadOnlyModelViewSet):
     pass
 

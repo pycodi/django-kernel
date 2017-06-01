@@ -466,6 +466,7 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
 
     phone = models.CharField(_('Телефон'), max_length=30, blank=True)
     date_birth = models.DateField(null=True, blank=True)
+    birth_int = models.PositiveIntegerField(null=True, blank=True, editable=False)
 
     is_staff = models.BooleanField(_('staff status'), default=False, help_text=Lang.MU_AH2)
     is_active = models.BooleanField(_('active'), default=True, help_text=Lang.MU_AH3)
@@ -492,6 +493,12 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
         verbose_name = _('пользователи')
         verbose_name_plural = _('пользователи')
         swappable = 'AUTH_USER_MODEL'
+        ordering = ['-last_name', ]
+
+    def save(self, *args, **kwargs):
+        if self.date_birth:
+            self.birth_int = int(self.date_birth.strftime('%m%d'))
+        super().save(*args, **kwargs)
 
     @property
     def name(self):
