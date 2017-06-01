@@ -497,7 +497,7 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
 
     def save(self, *args, **kwargs):
         if self.date_birth:
-            self.birth_int = int(self.date_birth.strftime('%m%d'))
+            self.birth_int = int(self.date_birth.timetuple().tm_yday)
         super().save(*args, **kwargs)
 
     @property
