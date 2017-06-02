@@ -468,9 +468,11 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
     date_birth = models.DateField(null=True, blank=True)
     birth_int = models.PositiveIntegerField(null=True, blank=True, editable=False)
 
+    date_joined = models.DateTimeField(_('date joined'), default=timezone.now)
+
     is_staff = models.BooleanField(_('staff status'), default=False, help_text=Lang.MU_AH2)
     is_active = models.BooleanField(_('active'), default=True, help_text=Lang.MU_AH3)
-    date_joined = models.DateTimeField(_('date joined'), default=timezone.now)
+    is_emailing = models.BooleanField(_('Is emailing'), default=True)
 
     photo = StdImageField(upload_to=upload_dir, blank=True,
                           variations={'promotion': (775, 775, True),
@@ -528,12 +530,13 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
     def send_email(self, template, context={}, **kwargs):
         from templated_email import send_templated_mail, get_templated_mail
         from django.conf import settings
-        if settings.SEND_EMAIL:
-            email = send_templated_mail(template_name=template, from_email=settings.DEFAULT_FROM_EMAIL,
-                                recipient_list=[self.email], context=context, **kwargs)
-        else:
-            email = send_templated_mail(template_name=template, from_email=settings.DEFAULT_FROM_EMAIL,
-                                recipient_list=settings.DEBUG_EMAIL, context=context, **kwargs)
+        if self.is_emailing:
+            if settings.SEND_EMAIL:
+                send_templated_mail(template_name=template, from_email=settings.DEFAULT_FROM_EMAIL,
+                                    recipient_list=[self.email], context=context, **kwargs)
+            else:
+                send_templated_mail(template_name=template, from_email=settings.DEFAULT_FROM_EMAIL,
+                                    recipient_list=settings.DEBUG_EMAIL, context=context, **kwargs)
 
         lm.Email.objects.logging(settings.DEFAULT_FROM_EMAIL, self.email, template, get_templated_mail(template, context).message() )
 
@@ -550,7 +553,7 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
     @staticmethod
     def list_fieldsets():
         return (
-           (None, {'fields': ('email', 'password')}),
+           (None, {'fields': ('email', 'is_emailing', 'password')}),
            (_('Personal info'), {'fields': ('first_name', 'last_name', 'middle_name', 'date_birth', 'photo')}),
            (_('Permissions'), {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
            (_('Important dates'), {'fields': ('last_login', 'date_joined')}),
