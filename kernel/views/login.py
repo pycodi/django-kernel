@@ -23,15 +23,19 @@ from braces.forms import UserKwargModelFormMixin
 from .mixin import LoginRequiredMixin, WithNextUrlMixin, AuthDecoratorsMixin, CsrfProtectMixin
 
 
-
 class LoginView(FormView):
     form_class = AuthenticationForm
     template_name = "kernel/login.html"
-    success_url = '/'
 
     def form_valid(self, form):
         auth.login(self.request, form.get_user())
         return super(LoginView, self).form_valid(form)
+
+    def get_success_url(self):
+        _next = self.request.GET.get('next')
+        if _next:
+            return _next
+        return '/'
 
 
 class LogoutView(TemplateView, RedirectView):

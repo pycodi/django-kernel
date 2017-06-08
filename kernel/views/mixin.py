@@ -127,7 +127,9 @@ class KernelDispachMixin(object):
         if self.can_action:
             if not self.can_action(request):
                 if not request.user.is_authenticated():
-                    return redirect(settings.LOGIN_URL)
+                    response = redirect(settings.LOGIN_URL)
+                    response['Location'] += '?next={}'.format(self.request.path)
+                    return response
                 raise PermissionDenied
         return super(KernelDispachMixin, self).dispatch(request, *args, **kwargs)
 
