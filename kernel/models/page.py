@@ -1,35 +1,17 @@
-from django.contrib.auth.models import (AbstractBaseUser, PermissionsMixin)
-from django.core.mail import send_mail
 from django.core.cache import cache
 from django.utils.html import strip_tags
 from django.db import models
 from django.conf import settings
-from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import python_2_unicode_compatible
 from django.template.defaultfilters import truncatechars_html
-from django.contrib.contenttypes.models import ContentType
-####
-####
-from polymorphic.models import PolymorphicModel
+# Import over module
 from stdimage.models import StdImageField
 from ckeditor_uploader.fields import RichTextUploadingField
-###
-###
-from .constant import Lang
-####
-from kernel.managers.user import PortalEmailUserMixinManager
-from kernel.middleware import CrequestMiddleware
+# Import kernel module
 from kernel.utils import upload_dir, slugify
 from kernel import managers as kman
-from kernel import filters as kf
-from kernel import constructors as kc
-###
-from logmail import models as lm
-####
-from rest_framework import serializers
-
-from .base import KernelByModel
+from kernel.models.base import KernelByModel
 
 
 __all__ = [

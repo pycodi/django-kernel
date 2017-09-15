@@ -1,50 +1,29 @@
 from django.contrib.auth.models import (AbstractBaseUser, PermissionsMixin)
 from django.core.mail import send_mail
-from django.core.cache import cache
-from django.utils.html import strip_tags
 from django.db import models
-from django.conf import settings
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import python_2_unicode_compatible
-from django.template.defaultfilters import truncatechars_html
-from django.contrib.contenttypes.models import ContentType
-####
-####
+# Import over module
 from polymorphic.models import PolymorphicModel
 from stdimage.models import StdImageField
-from ckeditor_uploader.fields import RichTextUploadingField
-###
-###
-from .constant import Lang
-####
-from kernel.managers.user import PortalEmailUserMixinManager
-from kernel.middleware import CrequestMiddleware
-from kernel.utils import upload_dir, slugify
-from kernel import managers as kman
-from kernel import filters as kf
-from kernel import constructors as kc
-###
-from logmail import models as lm
-####
+from templated_email import send_templated_mail, get_templated_mail
 from rest_framework import serializers
+# Import kernel module
+from kernel.constant import Lang
+from kernel.managers.user import PortalEmailUserMixinManager
+from kernel.utils import upload_dir, slugify
+from kernel.models.base import KernelModel
+from kernel import filters as kf
+from kernel.views.user import KernelUserUpdateMixin
 
-from .base import KernelModel
 
+import django_filters
 
-
-@python_2_unicode_compatible
-class KernelPermissions(PermissionsMixin):
-    base_objects = models.Manager()
-
-    class Meta:
-        db_table = 'krn_permissions'
-        verbose_name = _('права доступа')
-        verbose_name_plural = _('права доступа')
 
 
 @python_2_unicode_compatible
-class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelModel):
+class KernelUser(PolymorphicModel, AbstractBaseUser, PermissionsMixin, KernelModel):
     """
     Класс для пользователей всей системы. PortalEmailUser не имеет поля имя пользователя,
     в отличие от стандартного класса Django.
@@ -107,25 +86,18 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
             return self.email
 
     def get_full_name(self):
-        """
-        Return the email.
-        """
+        """ Return the email """
         return self.email
 
     def get_short_name(self):
-        """
-        Return the email.
-        """
+        """  Return the email """
         return self.email
 
     def email_user(self, subject, message, from_email=None, **kwargs):
-        """
-        Send an email to this User.
-        """
+        """  Send an email to this User. """
         send_mail(subject, message, from_email, [self.email], **kwargs)
 
     def send_email(self, template, context={}, **kwargs):
-        from templated_email import send_templated_mail, get_templated_mail
         from django.conf import settings
         if self.is_emailing:
             if settings.SEND_EMAIL:
@@ -134,9 +106,6 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
             else:
                 send_templated_mail(template_name=template, from_email=settings.DEFAULT_FROM_EMAIL,
                                     recipient_list=settings.DEBUG_EMAIL, context=context, **kwargs)
-
-        lm.Email.objects.logging(settings.DEFAULT_FROM_EMAIL, self.email, template, get_templated_mail(template, context).message() )
-
 
     @classmethod
     def get_admin_class(cls):
@@ -179,6 +148,7 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
     def get_filter_class(cls):
         class FilterClass(django_filters.FilterSet):
             id_list = kf.ListFilter(name='id')
+
             class Meta:
                 model = cls
                 fields = ('id', 'email', 'external_id', 'last_name', 'first_name', 'middle_name', 'date_birth')
@@ -214,5 +184,4 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, KernelPermissions, KernelMo
 
     @classmethod
     def get_update_view_class(cls):
-        from kernel.views.user import KernelUserUpdateMixin
         return KernelUserUpdateMixin.update_form_class(cls)

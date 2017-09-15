@@ -12,6 +12,7 @@ from kernel.admin.kernel import BaseAdmin
 import uuid
 import re
 
+
 __all__ = [
     'KernelByModel', 'KernelModel'
 ]
@@ -25,14 +26,14 @@ class KernelModel(kc.ActionKernelModel, kc.KernelPermalinkModel, kc.KernelViewsM
     created_date = models.DateTimeField(_('Создан'), auto_now_add=True)
     modified_date = models.DateTimeField(_('Изменен'), auto_now=True)
 
+    ROUTE_NAME = 'kernel'
+    URI = 'pk'
     REST = False
     ADMIN = False
     ALIAS = False
-    ROUTE_NAME = 'kernel'
     EXPORT = False
     MODELFORM = False
     MODELFORM_SUBMIT = None
-    URI = 'pk'
     URI_FORMAT_DETAIL = None
 
     class Meta:
@@ -50,7 +51,6 @@ class KernelModel(kc.ActionKernelModel, kc.KernelPermalinkModel, kc.KernelViewsM
 
     def get_verbose_name(self, _name):
         return self._meta.get_field(_name).verbose_name
-
 
     @classmethod
     def get_export_class(cls):

@@ -1,6 +1,11 @@
 django>=1.9.1
+django-ckeditor
+django-stdimage
+django-templated-email
 django-import-export
 django-templated-email
 django-filter
-polymorphic
+djangorestframework>=3.6.4
 
+polymorphic
+awesome-slugify
