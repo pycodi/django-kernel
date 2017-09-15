@@ -1,4 +1,7 @@
 from django.conf.urls import *
+from django.conf import settings
+from django.apps import apps
+from django.contrib import admin
 
 from kernel import views as kv
 from kernel import models as km
@@ -22,3 +25,9 @@ uri_list = [
 for ulist in uri_list:
     for uri in ulist:
         urlpatterns.append(uri)
+
+
+for app in settings.MY_APPS:
+    for cls in [m for m in apps.get_app_config(app).get_models()]:
+        if hasattr(cls, 'ADMIN') and cls.ADMIN:
+            admin.site.register(cls, cls.get_admin_class())

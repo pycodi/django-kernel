@@ -10,7 +10,6 @@ from datetime import timedelta
 from slugify import slugify as aw_slugify
 
 
-
 def slugify(str):
     return aw_slugify(str.lower())
 
