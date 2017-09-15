@@ -28,7 +28,7 @@ from kernel.middleware import CrequestMiddleware
 from kernel.utils import upload_dir, slugify
 from kernel import managers as kman
 from kernel import filters as kf
-from kernel import action as ka
+from kernel import constructors as kc
 from kernel.views.mixin import KernelDispachMixin
 ###
 from logmail import models as lm
@@ -50,7 +50,9 @@ class KernelPermissions(PermissionsMixin):
 
 
 @python_2_unicode_compatible
-class KernelModel(ka.ActionKernelModel, models.Model):
+class KernelModel(kc.ActionKernelModel, kc.KernelPermalinkModel, kc.KernelViewsModel,
+                  kc.KernelSerializerModel, kc.KernelUriModel, models.Model):
+
     external_id = models.CharField(_('Внешний ключ'), max_length=120, editable=False, default=uuid.uuid4)
     created_date = models.DateTimeField(_('Создан'), auto_now_add=True)
     modified_date = models.DateTimeField(_('Изменен'), auto_now=True)
@@ -145,27 +147,8 @@ class KernelModel(ka.ActionKernelModel, models.Model):
         return 'api-{1}-{0}'.format(str(cls.__name__).lower(), cls.ROUTE_NAME)
 
     @classmethod
-    def serializer_data(cls):
-        return [f.name for f in cls._meta.get_fields() if not f.related_model]
-
-    @classmethod
     def filters_data(cls):
         return cls.serializer_data()
-
-    @classmethod
-    def serializer_class(cls):
-        """
-        class Serializer(serializers.ModelSerializer):
-            class Meta:
-                model = cls
-                fields = cls.serializer_data()
-        return Serializer
-        """
-        class Serializer(serializers.ModelSerializer):
-            class Meta:
-                model = cls
-                fields = cls.serializer_data()
-        return Serializer
 
     @classmethod
     def table_class(cls):
@@ -183,24 +166,6 @@ class KernelModel(ka.ActionKernelModel, models.Model):
         return Tab
 
     @classmethod
-    def serializer_class_list(cls):
-        return cls.serializer_class()
-
-    @classmethod
-    def serializer_viewsets(cls):
-        from kernel.rest import viewsets as rv
-        from rest_framework.decorators import detail_route, list_route
-        from rest_framework.response import Response
-
-        class ViewSet(rv.KernelViewSets):
-            queryset = cls.objects.all()
-            serializer_class = cls.get_serializer_class()
-            filter_class = cls.get_filter_class()
-            list_serializer_class = cls.get_list_serializer_class()
-
-        return ViewSet
-
-    @classmethod
     def export_data(cls):
         return cls.serializer_data()
 
@@ -211,14 +176,6 @@ class KernelModel(ka.ActionKernelModel, models.Model):
     @classmethod
     def list_display(cls):
         return [f.name for f in cls._meta.get_fields() if not f.related_model]
-
-    @classmethod
-    def get_serializer_class(cls):
-        return cls.serializer_class()
-
-    @classmethod
-    def get_list_serializer_class(cls):
-        return cls.serializer_class_list()
 
     @classmethod
     def filter_class(cls):
@@ -248,94 +205,6 @@ class KernelModel(ka.ActionKernelModel, models.Model):
         return FilterClass
 
     @classmethod
-    def get_create_view_class(cls):
-        from kernel.views.mixin import KernelViewSetMixin
-        return KernelViewSetMixin.create_class_form(cls)
-
-    @classmethod
-    def get_update_view_class(cls):
-        from kernel.views.mixin import KernelViewSetMixin
-        return KernelViewSetMixin.update_class_form(cls)
-
-    @classmethod
-    def get_delete_view_class(cls):
-
-        class Delete(KernelDispachMixin, DeleteView):
-            model = cls
-            can_action = cls.can_action_delete
-            success_url = reverse_lazy('{}:{}_list'.format(cls._meta.app_label, str(cls.__name__).lower()))
-            fields = cls.list_fields()
-
-            def get_template_names(self):
-                names = super(Delete, self).get_template_names()
-                names.append("%s/layout/%s.html" % (cls._meta.app_label, self.template_name_suffix))
-                return names
-
-        return Delete
-
-    @classmethod
-    def get_detail_export_view_class(cls):
-        from django.views.generic import DetailView
-
-        class ClassView(KernelDispachMixin, DetailView):
-            model = cls
-            can_action = cls.can_action_view_detail
-        return ClassView
-
-    @classmethod
-    def get_detail_view_class(cls):
-        from django.views.generic import DetailView
-
-        class ClassView(KernelDispachMixin, DetailView):
-            model = cls
-            can_action = cls.can_action_view_detail
-        return ClassView
-
-    @classmethod
-    def get_list_view_class(cls):
-        from django.views.generic import ListView
-
-        class ClassView(KernelDispachMixin, ListView):
-            model = cls
-            can_action = cls.can_action_view_list
-            paginate_by = 100
-        return ClassView
-
-    @classmethod
-    def get_export_view_class(cls):
-        from django.views.generic import TemplateView, ListView
-        from django.http.response import HttpResponse
-        import csv
-
-        class ClassView(ListView):
-            model = cls
-
-            def get(self, request, *args, **kwargs):
-                if not self.model.can_action_view_list(request):
-                    if not request.user.is_authenticated():
-                        return redirect(settings.LOGIN_URL)
-                    raise PermissionDenied
-
-                queryset_list = cls.filter_class()(self.request.GET, queryset=self.get_queryset())
-                export = self.model.get_export_class()().export(queryset_list)
-
-                export_type = self.request.GET.get('export', 'csv')
-                if 'csv' in export_type:
-                    response = HttpResponse(content_type='text/csv')
-                elif 'xlsx' in export_type:
-                    response = HttpResponse(content_type='application/vnd.ms-excel')
-                else:
-                    response = HttpResponse(content_type='text/csv')
-
-                filename = slugify(cls.get_alias())
-                if cls._meta.verbose_name:
-                    filename = slugify(cls._meta.verbose_name)
-                response['Content-Disposition'] = 'attachment; filename="%s.%s"' % (filename, export_type)
-                response.write(export.__getattribute__(export_type))
-                return response
-        return ClassView
-
-    @classmethod
     def get_alias(cls):
         if cls.ALIAS:
             return cls.ALIAS
@@ -351,99 +220,12 @@ class KernelModel(ka.ActionKernelModel, models.Model):
         return uri_list
 
     @classmethod
-    def get_uri_create(cls):
-        from django.conf.urls import url
-        fields = cls.list_fields()
-        return url(r'^%s/new.html$' % cls.get_alias(),
-                   cls.get_create_view_class().as_view(), name='{0}_create'.format(str(cls.__name__).lower()))
-
-    @classmethod
-    def get_uri_update(cls):
-        return url(r'^%s/(?P<pk>\d+)/edit/$' % cls.get_alias(),
-                   cls.get_update_view_class().as_view(), name='{0}_update'.format(str(cls.__name__).lower()))
-
-    @classmethod
-    def get_uri_delete(cls):
-        return url(r'^%s/(?P<pk>\d+)/delete/' % cls.get_alias(),
-                   cls.get_delete_view_class().as_view(), name='{0}_delete'.format(str(cls.__name__).lower()))
-
-    @classmethod
-    def get_uri_detail(cls, pk: str = URI, format: str = '.html'):
-        return url(r'^%s/(?P<%s>[a-zA-Z0-9_A-Яа-я-]{1,300})%s$' % (cls.get_alias(), cls.URI,
-                                                                   (cls.URI_FORMAT_DETAIL if cls.URI_FORMAT_DETAIL else format)),
-                   cls.get_detail_view_class().as_view(), name='{0}_view'.format(str(cls.__name__).lower()))
-
-    @classmethod
-    def get_uri_list(cls):
-        return url(r'^%s/$' % cls.get_alias().lower(),
-                   cls.get_list_view_class().as_view(), name='{0}_list'.format(str(cls.__name__).lower()))
-
-    @classmethod
-    def get_uri_export(cls):
-        return url(r'^%s/export/' % cls.get_alias(),
-                   cls.get_export_view_class().as_view(), name='{0}_export'.format(str(cls.__name__).lower()))
-
-    @classmethod
-    def get_uri_detail_export(cls):
-        return url(r'^%s/(?P<pk>\d+)/export/' % cls.get_alias(),
-                   cls.get_detail_export_view_class().as_view(), name='{0}_detail_export'.format(str(cls.__name__).lower()))
-
-    @classmethod
-    def get_uri_crud(cls):
-        import re
-        uri_list = []
-        for m in cls.methods():
-            if re.match('get_uri_', m) and not m == 'get_uri_crud':
-                uri_list.append(getattr(cls, m)())
-        return uri_list
-
-    @classmethod
     def get_namespace(cls):
         return cls._meta.app_label
 
     @classmethod
     def get_model_name(cls):
         return cls._meta.model_name
-
-    @models.permalink
-    def get_absolute_url(self):
-        attr = getattr(self, self._meta.model.URI)
-        return '{0}:{1}_view'.format(self.get_namespace(),  self.get_model_name()), [str("%s" % attr)]
-
-    @classmethod
-    @models.permalink
-    def get_absolute_create_url(cls):
-        return '{0}:{1}_create'.format(cls.get_namespace(), cls.get_model_name()), []
-
-    @models.permalink
-    def get_absolute_delete_url(self):
-        attr = getattr(self, self._meta.model.URI)
-        return '{0}:{1}_delete'.format(self.get_namespace(),  self.get_model_name()), [str("%s" % attr)]
-
-    @models.permalink
-    def get_absolute_update_url(self):
-        attr = getattr(self, self._meta.model.URI)
-        return '{0}:{1}_update'.format(self.get_namespace(), self.get_model_name()), [str("%s" % attr)]
-
-    @models.permalink
-    def get_absolute_export_url(self):
-        attr = getattr(self, self._meta.model.URI)
-        return '{0}:{1}_export'.format(self.get_namespace(), self.get_model_name()), [str("%s" % attr)]
-
-    #
-    #
-    #
-    #
-    #
-    #
-    # Old class
-    @classmethod
-    def get_rest_viewset(cls):
-        return cls.serializer_viewsets()
-
-    @classmethod
-    def get_filter_class(cls):
-        return cls.filter_class()
 
 
 @python_2_unicode_compatible
