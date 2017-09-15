@@ -1,42 +1,20 @@
-from django.contrib.auth.models import (AbstractBaseUser, PermissionsMixin)
-from django.core.mail import send_mail
-from django.core.cache import cache
-from django.utils.html import strip_tags
 from django.db import models
 from django.conf import settings
-from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import python_2_unicode_compatible
-from django.template.defaultfilters import truncatechars_html
 from django.contrib.contenttypes.models import ContentType
-####
-####
-from polymorphic.models import PolymorphicModel
-from stdimage.models import StdImageField
-from ckeditor_uploader.fields import RichTextUploadingField
-###
-###
-from .constant import Lang
-####
-from kernel.managers.user import PortalEmailUserMixinManager
+# Import kernel module
 from kernel.middleware import CrequestMiddleware
-from kernel.utils import upload_dir, slugify
-from kernel import managers as kman
 from kernel import filters as kf
 from kernel import constructors as kc
-###
-from logmail import models as lm
-####
-from rest_framework import serializers
+from kernel.admin.kernel import BaseAdmin
 
-import django_filters
 import uuid
-
+import re
 
 __all__ = [
     'KernelByModel', 'KernelModel'
 ]
-
 
 
 @python_2_unicode_compatible
@@ -60,6 +38,10 @@ class KernelModel(kc.ActionKernelModel, kc.KernelPermalinkModel, kc.KernelViewsM
     class Meta:
         abstract = True
 
+    @classmethod
+    def admin_class(cls):
+        return type("{}Admin".format(cls.__name__), (BaseAdmin, ), {})
+
     def get_content_type(self):
         return ContentType.objects.get_for_model(self)
 
@@ -69,18 +51,6 @@ class KernelModel(kc.ActionKernelModel, kc.KernelPermalinkModel, kc.KernelViewsM
     def get_verbose_name(self, _name):
         return self._meta.get_field(_name).verbose_name
 
-    @classmethod
-    def methods(cls):
-        from types import FunctionType
-        return [x for x in dir(cls)]
-
-    @classmethod
-    def get_admin_class(cls):
-        from kernel.admin.kernel import BaseAdmin
-
-        class Admin(BaseAdmin):
-            pass
-        return Admin
 
     @classmethod
     def get_export_class(cls):
@@ -141,21 +111,6 @@ class KernelModel(kc.ActionKernelModel, kc.KernelPermalinkModel, kc.KernelViewsM
         return cls.serializer_data()
 
     @classmethod
-    def table_class(cls):
-        import django_tables2 as tables
-
-        class Tab(tables.Table):
-            id = tables.TemplateColumn(
-                template_code='<a href="{{ record.get_absolute_url }}" title="{{ record.subject }}" target="_blank">{{ record.id }}</a>',
-                verbose_name='ID', attrs={'th': {'width': '60'}}
-            )
-
-            class Meta:
-                model = cls
-                fields = cls.list_display()
-        return Tab
-
-    @classmethod
     def export_data(cls):
         return cls.serializer_data()
 
@@ -202,9 +157,8 @@ class KernelModel(kc.ActionKernelModel, kc.KernelPermalinkModel, kc.KernelViewsM
 
     @classmethod
     def urls(cls):
-        import re
         uri_list = []
-        for m in cls.methods():
+        for m in [x for x in dir(cls)]:
             if re.match('get_uri_', m) and not m == 'get_uri_crud':
                 uri_list.append(getattr(cls, m)())
         return uri_list
@@ -223,7 +177,7 @@ class KernelByModel(KernelModel):
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_('Создал'), on_delete=models.PROTECT,
                                    related_name="kernel_%(class)s_created_by", blank=True, null=True)
     modified_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name=_('Изменил'),
-                                    editable=False, related_name="kernel_%(class)s_modified_by", blank=True, null=True)
+                                   editable=False, related_name="kernel_%(class)s_modified_by", blank=True, null=True)
 
     class Meta:
         abstract = True
