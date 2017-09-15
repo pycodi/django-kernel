@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 
 from kernel.middleware import CrequestMiddleware
 
+
 class KernelAuthBackend(object):
 
     def authenticate(self, username=None, password=None, **kwargs):

@@ -2,19 +2,23 @@ from django.core.urlresolvers import reverse_lazy
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect
 from django.conf import settings
+from django.views.generic import DetailView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
-
+from django.views.generic import TemplateView, ListView
+from django.http.response import HttpResponse
 from kernel.views.mixin import KernelViewSetMixin, KernelDispachMixin
+
+import csv
 
 
 class KernelViewsModel(object):
+
     @classmethod
     def get_create_view_class(cls):
         return KernelViewSetMixin.create_class_form(cls)
 
     @classmethod
     def get_update_view_class(cls):
-        from kernel.views.mixin import KernelViewSetMixin
         return KernelViewSetMixin.update_class_form(cls)
 
     @classmethod
@@ -35,7 +39,6 @@ class KernelViewsModel(object):
 
     @classmethod
     def get_detail_export_view_class(cls):
-        from django.views.generic import DetailView
 
         class ClassView(KernelDispachMixin, DetailView):
             model = cls
@@ -45,7 +48,6 @@ class KernelViewsModel(object):
 
     @classmethod
     def get_detail_view_class(cls):
-        from django.views.generic import DetailView
 
         class ClassView(KernelDispachMixin, DetailView):
             model = cls
@@ -55,7 +57,6 @@ class KernelViewsModel(object):
 
     @classmethod
     def get_list_view_class(cls):
-        from django.views.generic import ListView
 
         class ClassView(KernelDispachMixin, ListView):
             model = cls
@@ -66,9 +67,6 @@ class KernelViewsModel(object):
 
     @classmethod
     def get_export_view_class(cls):
-        from django.views.generic import TemplateView, ListView
-        from django.http.response import HttpResponse
-        import csv
 
         class ClassView(ListView):
             model = cls
