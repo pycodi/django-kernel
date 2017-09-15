@@ -1,11 +1,8 @@
-try:
-    from django.conf.urls import *
-except ImportError:  # django < 1.4
-    from django.conf.urls.defaults import *
-
+from django.conf.urls import *
 
 from kernel import views as kv
 from kernel import models as km
+
 
 urlpatterns = [
     url(r'^login/$', kv.LoginView.as_view(), name='login'),
