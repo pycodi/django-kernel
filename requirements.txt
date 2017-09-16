@@ -5,6 +5,8 @@ django-templated-email
 django-import-export
 django-templated-email
 django-filter
+django-braces
+django-tables2
 djangorestframework>=3.6.4
 
 polymorphic

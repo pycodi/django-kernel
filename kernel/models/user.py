@@ -11,7 +11,7 @@ from templated_email import send_templated_mail, get_templated_mail
 from rest_framework import serializers
 # Import kernel module
 from kernel.constant import Lang
-from kernel.managers.user import PortalEmailUserMixinManager
+from kernel.managers.user import EmailUserMixinManager
 from kernel.utils import upload_dir, slugify
 from kernel.models.base import KernelModel
 from kernel import filters as kf
@@ -56,7 +56,7 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, PermissionsMixin, KernelMod
                                       'thumbnail': (75, 75, True),
                                       'medium': (300, 300)})
 
-    objects = PortalEmailUserMixinManager()
+    objects = EmailUserMixinManager()
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []

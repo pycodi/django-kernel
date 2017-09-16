@@ -1,24 +1,14 @@
-from django.contrib.auth import get_user_model
-from django.http.response import HttpResponse
 from django.core.urlresolvers import reverse_lazy
 from django.shortcuts import redirect, resolve_url
-from django.utils.functional import lazy
 from django.conf import settings
 from django.contrib.auth import get_user_model, REDIRECT_FIELD_NAME
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.tokens import default_token_generator
-from django.contrib import auth
 from django.utils.http import base36_to_int, is_safe_url
-from django.utils import six
-from django.views.decorators.cache import never_cache
-from django.views.decorators.csrf import csrf_protect
-from django.views.decorators.debug import sensitive_post_parameters
-from django.views.generic import FormView, TemplateView, RedirectView
+
 from django.contrib.auth import update_session_auth_hash
 from django.contrib import auth
 from django.views.generic import CreateView, TemplateView, FormView, RedirectView
 from django.contrib.auth.forms import (AuthenticationForm, SetPasswordForm, PasswordChangeForm, PasswordResetForm)
-from braces.forms import UserKwargModelFormMixin
 
 from .mixin import LoginRequiredMixin, WithNextUrlMixin, AuthDecoratorsMixin, CsrfProtectMixin
 

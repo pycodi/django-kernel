@@ -4,9 +4,6 @@ from django.utils.translation import ugettext_lazy as _
 
 from rest_framework import serializers
 from django.contrib.sites.models import Site
-from kernel.middleware import CrequestMiddleware
-
-import socket
 
 
 class StdImageFieldSerializer(serializers.ImageField):

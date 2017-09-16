@@ -3,7 +3,7 @@ from django.utils import timezone
 from polymorphic.models import PolymorphicManager
 
 
-class PortalEmailUserMixinManager(PolymorphicManager, BaseUserManager):
+class EmailUserMixinManager(PolymorphicManager, BaseUserManager):
     """
     Custom manager for EmailUser.
     """

@@ -2,17 +2,10 @@ from __future__ import unicode_literals
 from django.conf import settings
 from django.contrib.auth import get_user_model, REDIRECT_FIELD_NAME
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import (SetPasswordForm,
-                                       PasswordChangeForm, PasswordResetForm)
-from django.contrib.auth.tokens import default_token_generator
-from django.contrib import auth
 from django.core.exceptions import PermissionDenied
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.views.generic import DetailView
-try:
-    from django.contrib.sites.shortcuts import get_current_site
-except ImportError:
-    from django.contrib.sites.models import get_current_site  # Django < 1.7
+from django.contrib.sites.shortcuts import get_current_site
 from django.core.urlresolvers import reverse_lazy
 from django.shortcuts import redirect, resolve_url
 from django.utils.functional import lazy
@@ -22,25 +15,15 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.generic import FormView, TemplateView, RedirectView, ListView
-
+from django.contrib.auth import update_session_auth_hash
 
 from django_tables2.views import SingleTableView, SingleTableMixin
 from django_filters.views import FilterView, BaseFilterView
-
 from braces.views import FormValidMessageMixin
 from urllib import parse
 
 
-import warnings
 import itertools
-import django_filters
-
-try:
-    from django.contrib.auth import update_session_auth_hash
-except ImportError:
-    # Django < 1.7
-    def update_session_auth_hash(request, user):
-        pass
 
 
 def _safe_resolve_url(url):
