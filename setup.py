@@ -14,7 +14,7 @@ except ImportError:
 
 setup(
     name='django-kernel',
-    version='0.2.4',
+    version='0.3.0',
     description="""Kenrel Model for Django""",
     author='Nikita Kryuchkov',
     author_email='info@pycode.net',
@@ -22,7 +22,16 @@ setup(
     packages=['kernel',],
     include_package_data=True,
     install_requires=[
-        'Django>=1.9'
+        'Django>=1.9',
+        'django-ckeditor',
+        'django-stdimage',
+        'django-templated-email',
+        'django-import-export',
+        'django-templated-email',
+        'django-filter',
+        'django-braces',
+        'django-tables2',
+        'djangorestframework>=3.6.4',
     ],
     license="MIT",
     zip_safe=False,
