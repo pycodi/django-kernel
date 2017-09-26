@@ -1,18 +1,9 @@
-# -*- coding: utf-8 -*-
-from django.core.exceptions import ValidationError
-from django.db import transaction
-from django.utils.translation import ugettext_lazy as _
-from django.contrib.auth.models import Group
-from django.core.cache import cache
-
 from rest_framework import viewsets, mixins, permissions
-from rest_framework.filters import DjangoObjectPermissionsFilter, OrderingFilter, SearchFilter, DjangoFilterBackend
-from rest_framework.permissions import IsAuthenticated, DjangoModelPermissions, DjangoObjectPermissions
+from rest_framework.filters import OrderingFilter, SearchFilter, DjangoFilterBackend
+from rest_framework.permissions import DjangoModelPermissions, DjangoObjectPermissions
 from rest_framework.settings import api_settings
 from rest_framework.response import Response
-from rest_framework_extensions.cache.decorators import (cache_response)
 
-import pprint
 
 
 class BaseViewSets(object):
@@ -62,7 +53,7 @@ class KernelReadOnlyViewSets(BaseViewSets, viewsets.ReadOnlyModelViewSet):
 
 class AnyViewSet(KernelViewSets):
     """
-      Простой класс управления сереализации, предназначен для простых моделей
+    Простой класс управления сереализации, предназначен для простых моделей
     """
     permission_classes = [permissions.AllowAny]
     filter_backends = [SearchFilter, OrderingFilter]
@@ -70,7 +61,7 @@ class AnyViewSet(KernelViewSets):
 
 class AnyViewReadOnlySet(viewsets.ReadOnlyModelViewSet):
     """
-      Простой класс управления сереализцаии, доступный только на чтение и предназначеный для простых моделей
+    Простой класс управления сереализцаии, доступный только на чтение и предназначеный для простых моделей
     """
     permission_classes = (permissions.AllowAny,)
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
@@ -78,7 +69,7 @@ class AnyViewReadOnlySet(viewsets.ReadOnlyModelViewSet):
 
 class ReadOnlyListModelViewSet(viewsets.ReadOnlyModelViewSet):
     """
-      Класс разграничивающий права доступа и методы фильтрации данных для API.
+    Класс разграничивающий права доступа и методы фильтрации данных для API.
     """
     permission_classes = (DjangoModelPermissions, DjangoObjectPermissions)
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
@@ -86,7 +77,7 @@ class ReadOnlyListModelViewSet(viewsets.ReadOnlyModelViewSet):
 
 class ModelViewSet(viewsets.ModelViewSet):
     """
-      Простой класс управления сереализцаии, предназначен для простых моделей
+    Простой класс управления сереализцаии, предназначен для простых моделей
     """
     permission_classes = (DjangoModelPermissions, DjangoObjectPermissions)
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]

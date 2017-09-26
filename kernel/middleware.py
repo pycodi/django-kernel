@@ -4,9 +4,7 @@ import threading
 
 
 class CrequestMiddleware(object):
-    """
-    Always have access to the current user
-    """
+    """ Always have access to the current user """
     __users = {}
 
     def process_request(self, request):

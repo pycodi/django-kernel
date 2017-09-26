@@ -1,13 +1,8 @@
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import python_2_unicode_compatible
-from django.template.defaultfilters import truncatechars_html
-from django.contrib.contenttypes.models import ContentType
 # Import kernel module
-from kernel.middleware import CrequestMiddleware
 from kernel import filters as kf
-from kernel import constructors as kc
-from kernel.admin.kernel import BaseAdmin
 from .base import KernelByModel, KernelModel
 
 
@@ -62,6 +57,9 @@ class KernelUnit(KernelByModel):
 
 
 class KernelList(KernelModel):
+    """
+    Базовая модель для списков
+    """
     name = models.CharField(_('Название'), max_length=255)
 
     REST = True
