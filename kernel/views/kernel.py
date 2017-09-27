@@ -71,7 +71,7 @@ class KernelViewSetMixin(KernelBaseMixin):
     @staticmethod
     def update_class_form(_cls, _form_class=False, _form_valid_message='', _parents=[], **_kwargs):
         _form_class = _form_class if _form_class else _cls.get_modelform_class()
-        parents = list(itertools.chain([KernelDispachMixin, pdateView, ], _parents))
+        parents = list(itertools.chain([KernelDispachMixin, UpdateView, ], _parents))
 
         class Update(*parents):
             model = _cls
@@ -106,8 +106,7 @@ class KernelViewSetMixin(KernelBaseMixin):
     @staticmethod
     def list_class(_cls, _parents=None, _context={}, **_kwargs):
         parents = list(itertools.chain(
-            [] if _parents is None else _parents,
-            [KernelDispachMixin, BaseFilterView, SingleTableMixin, ListView])
+            [] if _parents is None else _parents, [KernelDispachMixin, BaseFilterView, SingleTableMixin, ListView])
         )
 
         class KernelList(*parents):

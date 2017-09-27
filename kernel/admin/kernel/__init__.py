@@ -15,9 +15,6 @@ from kernel.admin import action as kaa
 from kernel.utils import login_as
 
 
-
-
-
 class BaseAdmin(admin.ModelAdmin):
     list_per_page = 100
 
@@ -63,7 +60,8 @@ class KernelUserAdmin(UserAdmin):
 
     def login_as(self, obj):
         info = self.admin_site.name, self.model._meta.app_label, self.model._meta.model_name
-        return '<a href="{}" target="_blank">{}</a>'.format(reverse('%s:%s_%s_loginas' % info, args=(obj.pk,)), _('Перейти'))
+        return '<a href="{}" target="_blank">{}</a>'.format(
+            reverse('%s:%s_%s_loginas' % info, args=(obj.pk,)), _('Перейти'))
     login_as.allow_tags = True
 
     def get_urls(self):

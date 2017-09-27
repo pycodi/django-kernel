@@ -2,11 +2,7 @@ from __future__ import unicode_literals
 from django.conf import settings
 from django.contrib.auth import get_user_model, REDIRECT_FIELD_NAME
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied
-from django.views.generic.edit import CreateView, UpdateView, DeleteView
-from django.views.generic import DetailView
 from django.contrib.sites.shortcuts import get_current_site
-from django.core.urlresolvers import reverse_lazy
 from django.shortcuts import redirect, resolve_url
 from django.utils.functional import lazy
 from django.utils.http import base36_to_int, is_safe_url
@@ -14,20 +10,10 @@ from django.utils import six
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.debug import sensitive_post_parameters
-from django.views.generic import ListView
-
-from django_tables2.views import SingleTableView, SingleTableMixin
-from django_filters.views import FilterView, BaseFilterView
-from braces.views import FormValidMessageMixin
-from urllib import parse
-
-
-import itertools
 
 
 def _safe_resolve_url(url):
     return six.text_type(resolve_url(url))
-
 
 resolve_url_lazy = lazy(_safe_resolve_url, six.text_type)
 

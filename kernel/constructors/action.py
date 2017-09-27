@@ -1,8 +1,8 @@
-from django.db import models
-from django.http import HttpResponseRedirect
-from django.conf import settings
-from kernel import models as km
+from typing import Type
 from kernel.middleware import CrequestMiddleware
+
+
+_cls = Type('KernelModel', bound='kernel.models.base.KernelModel')
 
 
 class ActionKernelModel(object):
@@ -12,7 +12,7 @@ class ActionKernelModel(object):
         return CrequestMiddleware.get_user()
 
     @classmethod
-    def generate_perm(cls, action):
+    def generate_perm(cls: _cls, action):
         app_label = cls._meta.app_label
         class_name = cls._meta.model_name
         return '{}.{}_{}'.format(app_label, action, class_name)
