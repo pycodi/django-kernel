@@ -9,11 +9,6 @@ class ActionKernelModel(object):
 
     @property
     def action_user(self):
-        #print(CrequestMiddleware.get_user())
-        #try:
-        #    user = km.KernelUser.objects.get(email=CrequestMiddleware.get_user())
-        #except:
-        #    user = km.KernelUser.objects.get(id=1)
         return CrequestMiddleware.get_user()
 
     @classmethod

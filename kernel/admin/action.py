@@ -11,7 +11,6 @@ def move_to_group(modeladmin, request, queryset):
     if 'apply' in request.POST:
         form = kfaction.ActionChangeGroupForm(request.POST)
         if form.is_valid():
-            print(form.cleaned_data['group'])
             #category = form.cleaned_data['category']
 #
             #count = 0

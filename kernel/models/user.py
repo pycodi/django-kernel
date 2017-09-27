@@ -15,11 +15,10 @@ from kernel.managers.user import EmailUserMixinManager
 from kernel.utils import upload_dir, slugify
 from kernel.models.base import KernelModel
 from kernel import filters as kf
-from kernel.views.user import KernelUserUpdateMixin
+
 
 
 import django_filters
-
 
 
 @python_2_unicode_compatible
@@ -184,4 +183,5 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, PermissionsMixin, KernelMod
 
     @classmethod
     def get_update_view_class(cls):
+        from kernel.views.user import KernelUserUpdateMixin
         return KernelUserUpdateMixin.update_form_class(cls)

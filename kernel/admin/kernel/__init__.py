@@ -1,36 +1,14 @@
-from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from functools import update_wrapper
-from django.contrib import admin
-from django.conf import settings
 from django.conf.urls import url
 from django.contrib import admin, messages
-from django.contrib.admin.options import IS_POPUP_VAR
 from django.contrib.admin.utils import unquote
-from django.contrib.auth import update_session_auth_hash
-from django.contrib.auth.forms import (
-    AdminPasswordChangeForm, UserChangeForm, UserCreationForm,
-)
-from django.contrib.auth.models import Group, User
-from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse, reverse_lazy
-from django.db import transaction
 from django.http import Http404, HttpResponseRedirect
-from django.template.response import TemplateResponse
-from django.utils.decorators import method_decorator
 from django.utils.encoding import force_text
-
 from django.utils.html import escape
-from django.utils.translation import ugettext, ugettext_lazy as _
-from django.views.decorators.csrf import csrf_protect
-from django.views.decorators.debug import sensitive_post_parameters
-from django.contrib.admin import ModelAdmin
-from django.contrib.admin.templatetags.admin_urls import add_preserved_filters
 from django.core.exceptions import PermissionDenied
-from django.shortcuts import render
-
 from django.utils.translation import ugettext_lazy as _
-
+# Import kernel module
 from kernel import forms as kforms
 from kernel import models as km
 from kernel.admin import action as kaa

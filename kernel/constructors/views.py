@@ -6,7 +6,7 @@ from django.views.generic import DetailView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.views.generic import TemplateView, ListView
 from django.http.response import HttpResponse
-from kernel.views.mixin import KernelViewSetMixin, KernelDispachMixin
+from kernel.views.kernel import KernelViewSetMixin, KernelDispachMixin
 
 import csv
 
@@ -15,10 +15,12 @@ class KernelViewsModel(object):
 
     @classmethod
     def get_create_view_class(cls):
+
         return KernelViewSetMixin.create_class_form(cls)
 
     @classmethod
     def get_update_view_class(cls):
+
         return KernelViewSetMixin.update_class_form(cls)
 
     @classmethod

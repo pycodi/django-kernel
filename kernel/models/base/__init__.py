@@ -7,11 +7,9 @@ from django.contrib.contenttypes.models import ContentType
 from kernel.middleware import CrequestMiddleware
 from kernel import filters as kf
 from kernel import constructors as kc
-from kernel.admin.kernel import BaseAdmin
 
 import uuid
 import re
-
 
 __all__ = [
     'KernelByModel', 'KernelModel'
@@ -41,6 +39,7 @@ class KernelModel(kc.ActionKernelModel, kc.KernelPermalinkModel, kc.KernelViewsM
 
     @classmethod
     def admin_class(cls):
+        from kernel.admin.kernel import BaseAdmin
         return type("{}Admin".format(cls.__name__), (BaseAdmin, ), {})
 
     def get_content_type(self):
