@@ -8,7 +8,6 @@ from django.utils.encoding import python_2_unicode_compatible
 from polymorphic.models import PolymorphicModel
 from stdimage.models import StdImageField
 from templated_email import send_templated_mail, get_templated_mail
-from rest_framework import serializers
 # Import kernel module
 from kernel.constant import Lang
 from kernel.managers.user import EmailUserMixinManager
@@ -130,6 +129,7 @@ class KernelUser(PolymorphicModel, AbstractBaseUser, PermissionsMixin, KernelMod
 
     @classmethod
     def get_serializer_class(cls):
+        from rest_framework import serializers
         from kernel.fields import StdImageFieldSerializer
 
         class KernelUserSerializer(serializers.ModelSerializer):

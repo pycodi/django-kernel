@@ -10,4 +10,4 @@ for app in settings.MY_APPS:
     for cls in [m for m in apps.get_app_config(app).get_models()]:
         if hasattr(cls, 'ADMIN'):
             if cls.ADMIN:
-                admin.site.register(cls, cls.get_admin_class())
+                admin.site.register(cls, cls.admin_class())

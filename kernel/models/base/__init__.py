@@ -25,7 +25,6 @@ class KernelModel(kc.ActionKernelModel, kc.KernelPermalinkModel, kc.KernelViewsM
     modified_date = models.DateTimeField(_('Изменен'), auto_now=True)
 
     ROUTE_NAME = 'kernel'
-    URI = 'pk'
     REST = False
     ADMIN = False
     ALIAS = False
