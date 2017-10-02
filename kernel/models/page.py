@@ -36,10 +36,9 @@ class KernelPage(KernelByModel):
     longtitle = models.CharField(_(u'Расширенный заголовок'), blank=True, max_length=255)
     keywords = models.CharField(_(u'Ключевые слова'), blank=True, max_length=255)
     description = models.CharField(_(u'Описание'), blank=True, max_length=255)
-    slug = models.SlugField(
-        _('URL'), help_text=_(u'Использовать в качестве урла транскрипцию ключевых слов'),
-        max_length=120,
-        unique=True, blank=True
+    slug = models.CharField(
+        _('URL'), help_text=_('Использовать в качестве урла транскрипцию ключевых слов'),
+        max_length=140, unique=True, blank=True
     )
     image = StdImageField(
         upload_to=upload_dir,
