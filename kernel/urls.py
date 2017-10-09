@@ -8,6 +8,7 @@ from kernel import models as km
 
 
 urlpatterns = [
+    url(r'^signup/$', kv.LoginView.as_view(), name='signup'),
     url(r'^login/$', kv.LoginView.as_view(), name='login'),
     url(r'^logout/$', kv.LogoutView.as_view(), name='logout'),
     url(r'^password/change/$', kv.PasswordChangeView.as_view(), name='password_change'),

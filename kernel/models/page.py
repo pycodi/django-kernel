@@ -45,9 +45,9 @@ class KernelPage(KernelByModel):
         null=True, blank=True,
         variations={
             'promotion': (775, 275, True),
-            'large': (600, 400),
+            'large': (600, 400, True),
             'thumbnail': (75, 75, True),
-            'medium': (300, 200)}
+            'medium': (300, 200, True)}
     )
     introtext = models.TextField(verbose_name=_(u'Аннотация'))
     content = RichTextUploadingField(verbose_name=_(u'Статья'))
