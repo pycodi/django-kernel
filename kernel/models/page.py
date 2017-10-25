@@ -18,6 +18,12 @@ __all__ = [
     'KernelPage',
 ]
 
+IMAGE_VARIATIONS = {
+            'promotion': (775, 275, True),
+            'large': (600, 400, True),
+            'thumbnail': (75, 75, True),
+            'medium': (300, 200, True)
+}
 
 @python_2_unicode_compatible
 class KernelPage(KernelByModel):
@@ -43,11 +49,7 @@ class KernelPage(KernelByModel):
     image = StdImageField(
         upload_to=upload_dir,
         null=True, blank=True,
-        variations={
-            'promotion': (775, 275, True),
-            'large': (600, 400, True),
-            'thumbnail': (75, 75, True),
-            'medium': (300, 200, True)}
+        variations=IMAGE_VARIATIONS,
     )
     introtext = models.TextField(verbose_name=_(u'Аннотация'))
     content = RichTextUploadingField(verbose_name=_(u'Статья'))
