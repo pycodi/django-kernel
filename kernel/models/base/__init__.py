@@ -27,7 +27,6 @@ class KernelModel(kc.ActionKernelModel, kc.KernelPermalinkModel, kc.KernelViewsM
     ROUTE_NAME = 'kernel'
     REST = False
     ADMIN = False
-    ALIAS = False
     EXPORT = False
     MODELFORM = False
     MODELFORM_SUBMIT = None
@@ -146,11 +145,7 @@ class KernelModel(kc.ActionKernelModel, kc.KernelPermalinkModel, kc.KernelViewsM
 
         return FilterClass
 
-    @classmethod
-    def get_alias(cls):
-        if cls.ALIAS:
-            return cls.ALIAS
-        return str(cls.__name__).lower()
+
 
     @classmethod
     def urls(cls):

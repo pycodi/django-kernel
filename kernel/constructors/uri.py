@@ -5,7 +5,13 @@ class KernelUriModel(object):
 
     URI = 'pk'
     URI_FORMAT_DETAIL = None
+    ALIAS = False
 
+    @classmethod
+    def get_alias(cls):
+        if cls.ALIAS:
+            return cls.ALIAS
+        return str(cls.__name__).lower()
 
     @classmethod
     def get_uri_create(cls):
