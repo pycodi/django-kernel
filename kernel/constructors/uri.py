@@ -4,6 +4,7 @@ from django.conf.urls import url
 class KernelUriModel(object):
 
     URI = 'pk'
+    URI_FORMAT_DETAIL = None
 
 
     @classmethod

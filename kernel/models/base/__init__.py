@@ -31,7 +31,6 @@ class KernelModel(kc.ActionKernelModel, kc.KernelPermalinkModel, kc.KernelViewsM
     EXPORT = False
     MODELFORM = False
     MODELFORM_SUBMIT = None
-    URI_FORMAT_DETAIL = None
 
     class Meta:
         abstract = True
