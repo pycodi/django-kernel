@@ -49,10 +49,12 @@ class KernelViewsModel(object):
         return ClassView
 
     @classmethod
-    def get_detail_view_class(cls):
+    def get_detail_view_class(cls, uri_: str = 'slug'):
 
         class ClassView(KernelDispachMixin, DetailView):
             model = cls
+            slug_field = uri_
+            slug_url_kwarg = uri_
             can_action = cls.can_action_view_detail
 
         return ClassView
